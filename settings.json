@@ -1,3 +1,42 @@
-{"basedir": "D:\\oldpics\\", 
+{
+"basedir": "D:\\oldpics\\", 
 "port": "8000", 
-"repodir": "C:/brazen"}
+"repodir": "C:/brazen",
+"image_archive":"images",
+"bloom_db":"bloom",
+"tables":
+	{
+	"image_index":
+		{
+		"name":"images",
+		"columns":
+			[
+				["id","INTEGER","NOT NULL AUTO_INCREMENT"],
+				["file_path","VARCHAR(255)",""]
+			],
+		"constraints":
+			[
+				["pk_id","PRIMARY KEY","(id)"]
+			]
+		},
+	"tag_index":
+		{
+		"name":"tags",
+		"columns":
+			[
+				["id","INTEGER","NOT NULL AUTO_INCREMENT"],
+				["name","VARCHAR(255)","NOT NULL"],
+				["display","VARCHAR(255)"
+			],
+		"constraints":
+			[
+				["pk_id","PRIMARY KEY","(id)"]
+				["uq_name","UNIQUE","(name)"]
+			]
+		}
+	}
+}
+
+(id INTEGER NOT NULL AUTO_INCREMENT,
+                        file_path varchar(255),
+                        CONSTRAINT pk_id PRIMARY KEY (id)
