@@ -3,7 +3,7 @@
 "port": "8000", 
 "repodir": "C:/brazen",
 "image_archive":"images",
-"bloom_db":"bloom",
+"bloom_db":"bloom.db",
 "tables":
 	{
 	"image_index":
@@ -11,7 +11,7 @@
 		"name":"images",
 		"columns":
 			[
-				["id","INTEGER","NOT NULL AUTO_INCREMENT"],
+				["id","INTEGER","NOT NULL PRIMARY KEY"],
 				["file_path","VARCHAR(255)",""]
 			],
 		"constraints":
@@ -24,19 +24,15 @@
 		"name":"tags",
 		"columns":
 			[
-				["id","INTEGER","NOT NULL AUTO_INCREMENT"],
+				["id","INTEGER","NOT NULL PRIMARY KEY"],
 				["name","VARCHAR(255)","NOT NULL"],
-				["display","VARCHAR(255)"
+				["display","VARCHAR(255)",""]
 			],
 		"constraints":
 			[
-				["pk_id","PRIMARY KEY","(id)"]
+				["pk_id","PRIMARY KEY","(id)"],
 				["uq_name","UNIQUE","(name)"]
 			]
 		}
 	}
 }
-
-(id INTEGER NOT NULL AUTO_INCREMENT,
-                        file_path varchar(255),
-                        CONSTRAINT pk_id PRIMARY KEY (id)
