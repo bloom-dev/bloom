@@ -1,0 +1,12 @@
+$def with (image_data, tag_list)
+
+<img src='/static/archive/$(image_data.file_path)'>
+<br>
+<br>
+<b>Tags:</b>
+<ul>
+	$for tag in tag_list
+		<li>$(tag.name)</li>
+</ul>
+
+

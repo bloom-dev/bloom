@@ -15,7 +15,9 @@ _urls = (
 	'/images','images',
 	'/tags','tags',
 	'/collections','comingsoon',
-	'/upload','comingsoon'
+	'/upload','comingsoon',
+	'/image/(.+)','image',
+	'/list/(.+)','search'
 )
 
 class index:
@@ -32,6 +34,12 @@ class tags:
 	def GET(self):
 		tag_list = _db.select('tags')
 		return _render.tags(tag_list)
+class image:
+	def GET(self,imageID):
+		image_data = _db.select('images',where='ID = '+imageID)
+		image_tags = _db.query('SELECT ImageID,TagID,Name FROM ImageTags INNER JOIN Tags ON ImageTags.tagID = Tags.ID WHERE ImageID = '+imageID)
+		for image_d in image_data:
+			return _render.image(image_d, image_tags)
 
 class comingsoon:
 	def GET(self):
