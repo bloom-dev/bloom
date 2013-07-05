@@ -1,0 +1,72 @@
+$def with (content)
+<html>
+<head>
+	<title> Bloom </title>
+	<link rel="stylesheet" type="text/css" href="/static/css/reset.css">
+	<style>
+		html {
+		    position: relative;
+		    min-height: 100%;
+		}
+		body {
+		    margin: 0 0 50px; /* bottom = footer height */
+		    background-color: #eee;
+		}
+		footer {
+		    position: absolute;
+		    left: 0;
+		    bottom: 0;
+		    height: 50px;
+		    width: 100%;
+		}
+		.header{
+			background-color:#227;
+			padding:40px;
+			color:white;
+		}
+		.header a{
+			color:white;
+		}
+		.header a:visited{
+			color:#ddf;
+		}
+		.header h2{
+			font-size:400%;
+		}
+		.bloomnav li{
+			display:inline;
+			padding-left:20px;
+		}
+
+		.page{
+			padding:30px;
+		}
+		footer{
+			background-color:#aaa;
+		}
+		footer p{
+			padding:15px;
+		}
+	</style>
+</head>
+<body>
+	<div class="header">
+		<h2>Bloom</h2>
+		<ul class='bloomnav'>
+			<li><a href="/">Home</a></li>
+			<li><a href="/images">Images</a></li>
+			<li><a href="/tags">Tags</a></li>
+			<li><a href="/collections">Collections</a></li>
+			<li><a href="/upload">Upload</a></li>
+		</ul>
+	</div>
+	<div class='page'>
+		$:content
+	</div>
+	<footer>
+		<p>
+			Bloom 2013
+		</p>
+	</footer>
+</body>
+</html>
