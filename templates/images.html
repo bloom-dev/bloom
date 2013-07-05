@@ -1,10 +1,12 @@
 $def with (images)
-
-
+<style>
+.images_listing li{
+	float:left;
+	padding:10px;
+}
+</style>
+<ul class = "images_listing">
 $for row in images:
-	$row.id
-	<br>
-	$row.file_path
-	<br>
-	<img src='static/archive/$row.file_path'>
-	
+	<li><a href='/image/$row.id'><img src='/static/archive/thumbnails/$(row.file_path)'></a></li>
+
+</ul>
