@@ -16,8 +16,7 @@ class Configuration(object):
     '''
     Essentially, an elaborate dict for configuration parameters, with some additional
     functionality.
-    '''
-    '''Example:
+    Example:
     config = Configuration(db="chemicals",table_names=['pubchem','native'])
     config.user = "root"
     
