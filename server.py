@@ -186,7 +186,8 @@ class images:
 
 class tags:
 	def GET(self):
-		tag_list = _db.select('tags')
+		tag_list = _db.query(' SELECT ImageTags.TagID, Tags.name, count(*) as count FROM ImageTags INNER JOIN tags ON ImageTags.tagID = Tags.ID GROUP BY Tags.ID')
+		#tag_list = _db.select('tags')
 		return _render.tags(tag_list)
 class image:
 	def GET(self,imageID):
