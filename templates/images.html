@@ -5,6 +5,12 @@ $def with (images)
 	padding:10px;
 }
 </style>
+
+<form method="POST" enctype="multipart/form-data" action="/list">
+<input type="text" name="searchstr" />
+<input type="submit" />
+</form>
+
 <ul class = "images_listing">
 $for row in images:
 	<li><a href='/image/$row.id'><img src='/static/archive/thumbnails/$(row.file_path)'></a></li>
