@@ -1,0 +1,10 @@
+$def with (images)
+
+
+$for row in images:
+	$row.id
+	<br>
+	$row.file_path
+	<br>
+	<img src='static/archive/$row.file_path'>
+	
