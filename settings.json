@@ -13,10 +13,6 @@
 			[
 				["id","INTEGER","NOT NULL PRIMARY KEY"],
 				["file_path","VARCHAR(255)",""]
-			],
-		"constraints":
-			[
-				["pk_id","PRIMARY KEY","(id)"]
 			]
 		},
 	"tag_index":
@@ -27,11 +23,6 @@
 				["id","INTEGER","NOT NULL PRIMARY KEY"],
 				["name","VARCHAR(255)","NOT NULL"],
 				["display","VARCHAR(255)",""]
-			],
-		"constraints":
-			[
-				["pk_id","PRIMARY KEY","(id)"],
-				["uq_name","UNIQUE","(name)"]
 			]
 		}
 	}
