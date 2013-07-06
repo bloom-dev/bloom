@@ -42,10 +42,15 @@ def setup_default_tables(cxn=None):
         
 
 #@incomplete    
-def import_image(image_path,cxn=None):
+def import_image(old_image_path,cxn=None):
     if cxn is None:
         cxn = sql.connect(_config['image_database'])
-        
+    
+    
+    #[] Move image from original location to archives
+    old_path, image_name = os.path.split(image_path)
+    new_image_path = _config['image_archive'] + image_name
+    
     #[] Insert Image
     sql_insert = '''INSERT INTO {0}
     (file_path)
