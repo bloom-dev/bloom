@@ -127,7 +127,63 @@ def sqlite_needs_help(searchstr,itags):
 			del pieces[inf_index]
 		if len(pieces) == 1:
 			return pieces[0]
-			
+
+
+def filter_by_tags(self,searchstr):
+	#Oakland's code: in progress
+	#searchstr is a renaming of 'tags' from class search
+
+	#Proposed structure:
+	#[] Parse; searchstr --> tag_names[] list
+	#[] Get: image_ids for tag_names --> image_ids['tagname'] = [id1,id2,...]
+	#[] .... something about seperating this into two variables: positive tags and negative tags
+	#[] 
+	#----
+
+	#EXPAND THIS - TO COVER THE WHOLE RANGE OF BOOLEAN LOGIC
+	#INCLUDING NESTING
+	#Quantifiably different results from examples:
+	#'boobs or (parasite and icecream)'
+	#'(boobs or parasite) and icecream'
+
+
+	#Need more complicated tag string processing
+	#Example: 'boobs and icecream and not parasites'
+	positive_tag_names, negative_tag_names = tag_string_processing(searchstr)
+	raw_tag_names = searchstr.split('/')	#might need to escape this
+
+	#?? how are positive/negative tags distinguished?
+	positive_tags = (get_image_ids(tag_name) for tag_name in positive_tag_names)
+	negative_tags = (get_image_ids(tag_name) for tag_name in negative_tag_names)
+
+	search_results = (image_id for image_id in positive_tags.pop())
+
+	for pos_tag in positive_tags:		#positive or: TAG1 or TAG2
+		search_results = (image_id for image_id in search_results
+									if image_id in pos_tag)
+		
+	for neg_tag in negative_tags:		#negative and: TAG3 and not TAG4
+		search_results = (image_id for image_id in search_results
+									if image_id not in neg_tag)
+
+	return _render.images(list(search_result))		#list(result) is necessary to collapse the delayed execution of the generator.
+
+	#OR: In one line - to show off big epeen
+	#Note this code uses 'in' for two very different operations - iteration and set inclusion
+	search_results = (image_id 
+						for image_id in positive_tags[0]
+							if all((image_id in pos_tag) for pos_tag in positive_tags[1:])
+							if not all((image_id in neg_tag) for neg_tag in negative_tags))
+
+def get_image_ids(tag_name):
+	#Oakland's code: in progress
+	#@todo: 
+	#Note to self - fuck with the formmating
+	imageset = set()
+	tagdata = _db.query(' SELECT ImageID FROM ImageTags INNER JOIN Tags ON ImageTags.tagID = Tags.ID WHERE Tags.name = \''+tag+'\' ')
+	#this is not actualy formatted correctly
+	for t in tagdata:
+		imageset.add(t.ImageID)
 
 def sqlite_is_bad(self,searchstr):
 
@@ -213,6 +269,15 @@ class upload:
 			something = _db.insert('images',file_path=filename)
 			make_thumbnail(filename)
 		raise web.seeother('/images')
+
+def import_file(filename):
+	filepath=f.filename.replace('\\','/')
+	filename=filepath.split('/')[-1] # splits the and chooses the last part (the filename with extension)
+	fout = open(filedir +'/'+ filename,'wb') # creates the file where the uploaded file should be stored
+	fout.write(f.file.read()) # writes the uploaded file to the newly created file.
+	fout.close() # closes the file, upload complete.
+	something = _db.insert('images',file_path=filename)
+	make_thumbnail(filename)
 
 class comingsoon:
 	def GET(self):
