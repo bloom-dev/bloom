@@ -32,3 +32,14 @@
             Click for a larger popup.
 '''
 
+
+#Extract image upload from server.py
+    #Decouple from web.input (the result of the form, from web.py)
+#Setup a join table
+
+#Do code portion of tag uploading
+#Fuck with web portion of tag uploading
+#Create join table
+#Function to upload whole folder
+
+#tag functions - in Python or in SQL?
