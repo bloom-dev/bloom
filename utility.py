@@ -384,6 +384,16 @@ def partial_format(in_string,*format_args,**format_dict):
         in_string = in_string.replace('{'+tag_name+'}',new_value)
     return in_string
 
+def find_next(haystack,target):
+    for i,elm in enumerate(haystack):
+        if elm == target:
+            return i
+        
+def find_indices(haystack,target):
+    accumulator = []
+    for i,elm in enumerate(haystack):
+        if elm == target:
+            accumulator.append(i)
 
 #============= IN PROGRESS
 def meta_map(haystacks,needles,func):
