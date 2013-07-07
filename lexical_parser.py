@@ -2,10 +2,16 @@ import shlex
 import re
 #------ custom modules
 from organizers import Configuration
-from utility import find_next
+
 
 
 #-------- 
+def find_next(haystack,target):
+    for i,elm in enumerate(haystack):
+        if elm == target:
+            return i,elm
+    else:
+        return None
 
 #--------- Examples and Debugging Code -------
 tags = {'boobs':[1,2,3,4,5],
@@ -65,42 +71,38 @@ class NodeList(object):
     def __init__(self,token_list,sublist=False):
         self.tokens = token_list
         if sublist is False:        #sublists do not need depths calculated
-            self.find_depths()
+            self.set_depths()
         #Number/index tokens
         for i in range(len(self.tokens)):
             self.tokens[i].index = i
     #------------- Work horse functions
     def set_depths(self):
         current_depth = 0
-        for i,token in enumerate(self.tokens):
-            self.tokens[i].depth = current_depth
+        for i,token in enumerate(self.tokens):      #Depth increments on '(', and decrements on ')'
             if token == '(':
                 current_depth += 1
             elif token == ')':
                 current_depth -= 1
+            self.tokens[i].depth = current_depth
         if current_depth != 0:      #if it doesn't end at depth == 0
             Exception("Unbalanced parenthesis.")
-    def find_innermost_nest(self):
+    def next_nested(self):
         max_depth = max(self['depth'])
-        #[] Find '(' which are at the max depth still in list
-        front_parens = [token for token in self.tokens
-                        if token.type == '('
-                        and token.depth == max_depth]
         
-        #find_next(self['type'][front:],')'),
-        back_parens = []
-        for front in front_parens:
-            #Look for closest subsequent ')'
-            for token in self.tokens[front.index:]:   #The slice from the '(' to the end
-                if token.type == ')':
-                    back_parens.append( token )
-            else:   #if a back token was not found
-                raise Exception("Mismatched parenthesis for: "+str(self.tokens[front.index:]))
-                
-        for i,token in enumerate(self.tokens):
-            if (token.type == '(') and (token.depth == max_depth):
-                front = i
+        #[] Find Next: '(' which are at the max depth still in list
+        for token in self.tokens:
+            if token.type == '(' and token.depth == max_depth:
+                front = token
                 break
+        else:   #No '(' remain
+            return None
+        
+        _,back = find_next(self[front.index:],')')
+        if back == None:
+            raise Exception("Mismatched parenthesis for: "+str(self.tokens[front_index:]))                
+        
+        inner_nest = self.tokens[front.index:back.index]
+        return {'front':front_index,'back':back_index}
         
     #------------- Utility Functions
     def __str__(self):
@@ -111,13 +113,27 @@ class NodeList(object):
         else:
             return "["+",\n".join(repr(token) for token in self.tokens)+"]"
     def __getitem__(self,key):  #myTokens['depths']
-        accumulator = []
-        for token in self.tokens:
-            try:
-                accumulator.append( token.__getattribute__[key] )
-            except:
-                accumulator.append( None )
-        return accumulator
+        if type(key) == slice:  #slice indexing
+            return self.tokens[key.start:key.stop:key.step]
+        elif type(key) == str:
+            return [token.__dict__.get(key,None)        #Use 'None' as default value if key does not exist in token 
+                    for token in self.tokens]
+        elif type(key) == int:
+            return self.tokens[key]
+        else:
+            raise KeyError("Invalid key: {0} for {1}".format(repr(key),self.__class__.__name__))
+    def __setitem__(self,key,value):
+        if type(key) == slice:
+            self.tokens[key.start:key.stop:key.step] = value
+        elif type(key) == int:
+             self.tokens[key] = value
+#        accumulator = []
+#        for token in self.tokens:
+#            try:
+#                accumulator.append( token.__dict__[key] )
+#            except:
+#                accumulator.append( None )
+#        return accumulator
     def names(self):
         return [token.name for token in self.tokens]
     def types(self):
@@ -143,7 +159,13 @@ if __name__ == "__main__":
     token_strings = get_token_strings(ex3)
     tokens = [Token(token_str) for token_str in token_strings]
     raw_token_list = NodeList(tokens)
-    innermost = raw_token_list.get_innermost_
-    #[] Replace subexpression
+    print(raw_token_list[11:14])
+    innermost = raw_token_list.next_nested()
+    print(innermost)
+    #[] Fold the next nest into a single node
+    #~create a new node
+    #insert the new node at the first element of nested slice
+    #cut out the nested range
+    
     
     print(raw_token_list)
