@@ -387,7 +387,9 @@ def partial_format(in_string,*format_args,**format_dict):
 def find_next(haystack,target):
     for i,elm in enumerate(haystack):
         if elm == target:
-            return i
+            return i,elm
+    else:
+        return None
         
 def find_indices(haystack,target):
     accumulator = []
