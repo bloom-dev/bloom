@@ -4,28 +4,28 @@ import re
 from organizers import Configuration
 
 
+#REFACTOR:
+#So that Expressions are a variety of Token
+#... or perhaps Token and Expression are both Nodes
+#... and NodeList contains Nodes (~ self.nodes --> self.nodes)
 
-#-------- 
-def find_next(haystack,target):
-    for i,elm in enumerate(haystack):
-        if elm == target:
-            return i,elm
-    else:
-        return None
+
+
+
 
 #--------- Examples and Debugging Code -------
-tags = {'boobs':[1,2,3,4,5],
-        'tits':[4,5,6],
-        'parasite':[5,7,8,9],
-        'icecream':[2,4,8,10,11],
-        'wangs':[2,3,8,9,10,12],
-        'mountains':[1,4,12,13,14]
+tags = {'boobs':set([1,2,3,4,5]),
+        'tits':set([4,5,6]),
+        'parasite':set([5,7,8,9]),
+        'icecream':set([2,4,8,10,11]),
+        'wangs':set([2,3,8,9,10,12]),
+        'mountains':set([1,4,12,13,14])
         }
 ex1 = 'boobs or (parasite and icecream)'
 ex2 = '(boobs or parasite) and icecream'
-ex3 = '(boobs and tits) or not (wangs and not (tits or mountains))'
-ex4 = '(boobs and tits) or not (wangs and not "tits or mountains")'
-bad3= '(boobs and tits) or (wangs and (peoples or mountains)'
+ex3 = '(boobs and tits) not (wangs not (tits or mountains))'
+ex4 = '(boobs and tits) or (wangs not (tits or mountains))'
+bad3= '(boobs and tits) not (wangs and (peoples or mountains)'
 
 
 #---------- Parameters
@@ -35,137 +35,264 @@ _param.token_categories = [['(','['],
                            ['and','*','&'],
                            ['or','+','|'],
                            ['not','-']] #If not one of these --> must be a tag
-_param.valid_tag_re = "^[A-Za-z0-9_-]*$"   #letters, numbers, '-', and '_'
+_param.logicals = ['and','or','not']
+_param.valid_tag_re = "^[A-Za-z0-9_-]*$"   #letters, numbers, '-', and '_'. All others - reserved categories.
 
 
 class Token(object):
-    def __init__(self,token_string):
-        for category in _param.token_categories:    #If token is in one of the reserved categories
-            if token_string in category:
-                self.type = category[0]         #Standard representation
-                self.name = category[0]
-                break
-        else:   #If token is not one of the TokenCategories - IE the 'for' did not break
-            if re.match(_param.valid_tag_re,token_string):
-                self.type = 'tag'
-                self.name = token_string
-                self.contents = tags[token_string]    #ONLY USED IN DEBUGING
-            else:   #Invalid string
-                raise Exception("Invalid tag name - contains a forbidden character.")
-    def __str__(self):
+    '''Token types may be '(',')','and','or','not','tag'.
+    Two types of creation:
+    (1) Standard: creates a token based on input string. Standardizes parenthesis forms and
+        operator names (ex. '&'-->'and'), and does error checking on tag names.
+    Ex. Token('mountains')
+    (2) Combined Tag Lists: used primarily when combining tags after a logical operation. 
+        Only used to create tokens of type 'tag' (not the operators or parentheses).
+        Specifies name and contents directly. Does not do error checking on name.
+    Ex. Token(name='(mountains and hills)',contents=my_tag_list)
+    '''
+    def __init__(self,token_string=None,name=None,contents=None):
+        if token_string is not None:    #Method #1: Standard - create token from input string
+            for category in _param.token_categories:    #If token is in one of the reserved categories
+                if token_string in category:
+                    self.type = category[0]         #Standard representation
+                    self.name = category[0]         #self.name = token_string
+                    break
+            else:   #If token is not one of the TokenCategories - IE the 'for' did not break
+                if re.match(_param.valid_tag_re,token_string):
+                    self.type = 'tag'
+                    self.name = token_string
+                    
+                    if contents is None:
+                        self.contents = tags[token_string]         #ONLY USED IN DEBUGING - should be replaced by SQL calls
+                    else:
+                        self.contents = contents    
+                else:   #Invalid string
+                    raise Exception("Invalid tag name - {0} contains a forbidden character.".format(token_string))
+        elif name is not None and contents is not None: #Method #2 - Combined: 
+            self.type = 'tag'
+            self.name = name
+            self.contents = contents
+        else:
+            raise Exception("Invalid Token initialization: either specify a single token_string, OR specify a name and contents (by Keywords).")
+    def get_contents(self): #Used to provide a generic contents access method between expressions and Tokens
+        if self.type =='tag':
+            return self.contents
+        else:
+            raise Exception("Tokens of type {0} do not have contents.".format(self.type))
+    def __str__(self):  #str() / print()
         return self.name
     def __repr__(self):
         return str(self.__dict__)
-    def __eq__(self,other):   # '==' operator
-        return str(self) == str(other)
+    def __eq__(self,other):   # Logical equality '==' operator
+        return str(self.name) == str(other)
+    def __contains__(self,item):   #"item in TAG"/"item not in TAG"
+        if self.type != 'tag':
+            raise TypeError('in <{0}> not valid for tags of type '.format(type(other),self.type))
+        return (item in self.contents)
 
-#
-class Node(Token):
-    def __init__(self,token_string):
-        Token.__init__(self,token_string)
-        if self.type in ['and','or','not']:
-            self.left
-            self.right
 
-class NodeList(object):
-    def __init__(self,token_list,sublist=False):
-        self.tokens = token_list
-        if sublist is False:        #sublists do not need depths calculated
-            self.set_depths()
-        #Number/index tokens
-        for i in range(len(self.tokens)):
-            self.tokens[i].index = i
+class Expression(object):
+    '''An object consists of a list of Token() and Expression() objects.
+    Any '('/')' Token objects will be parsed out and replaced with Expression() objects.
+    ''' 
+    def __init__(self,node_list,sublist=False):
+        self.nodes = node_list
+        self.type = 'expression'
+        
+        self.set_indexes()          #Number/index tokens
+        #@deprecated: .set_depths() now extracted as a seperate list inside .replace_expressions()
+        #self.set_depths()           #Used to find the 'deepest' sub-Expression
+        self.replace_expressions()       #Replaces nested statements with Expression objects
     #------------- Work horse functions
-    def set_depths(self):
-        current_depth = 0
-        for i,token in enumerate(self.tokens):      #Depth increments on '(', and decrements on ')'
-            if token == '(':
-                current_depth += 1
-            elif token == ')':
-                current_depth -= 1
-            self.tokens[i].depth = current_depth
-        if current_depth != 0:      #if it doesn't end at depth == 0
-            Exception("Unbalanced parenthesis.")
-    def next_nested(self):
-        max_depth = max(self['depth'])
+    def process(self,token=None):
+        '''Assumes all parenthesis have been removed, and replaced with Expressions.'''
+        if token is None:
+            #Process left-to-right (~doesn't worry about precedence atm)
+            if len(self.nodes) == 1:
+                return 
+            for token in self:
+                self.process(token)   #This does nothing for 'tag' Tokens()
+                #self.process(token.index)
+            #Now there should only be one element in self.nodes - one Token object
+            if len(self.nodes) != 1:
+                raise Exception("self.process() code not working correctly.")
+                
+        else:   #token_number is an integer --> treat as index into self.contents[]
+            i = token.ind
+            if self[i].type not in ['and','or','not']:  #If an expression or a tag
+                pass #Do nothing
+            else:   #If a logical statement
+                #Do logical replacement
+                left = self[i-1]
+                oper = self[i]
+                right = self[i+1]
+                
+                #Expression().get_content() -- will cause that expression to be processed.
+                new_set = set_logic(oper.type,left.get_contents(),right.get_contents())
+                
+                #[] Replace slice left,operator,right --> new_set
+                new_name = "'"+" ".join([left.name,oper.name,right.name])+"'"
+                new_node = Token(name=new_name,contents=new_set)
+                node_slice = self.nodes[left.ind:(right.ind+1)]
+                
+                print(repr(self))
+                self.replace(node_slice,new_node)
+                print(repr(self))
+ 
+    
+    #----------- Replacing Sub-Expressions
+    def replace_expressions(self):
+        '''Replace parenthesized expressions with Expression() nodes, depth first.
+        Look for parenthesis pairs in the tokens, and replace 
+        them with Expression() objects.''' 
+        nested = self.next_nested() #Find deepest parenthesis pair
+        while nested != None:
+            self.replace(nested)
+            nested = self.next_nested()
+    def next_nested(self,depths=None):
+        if depths is None:
+            depths = self.depths()
+        max_depth = max(depths)
         
         #[] Find Next: '(' which are at the max depth still in list
-        for token in self.tokens:
-            if token.type == '(' and token.depth == max_depth:
+        #    Deepest '(' --> implies it contains no other '('
+        for token,depth in zip(self.nodes,depths):
+            if token.type == '(' and depth == max_depth:
                 front = token
                 break
         else:   #No '(' remain
             return None
         
-        _,back = find_next(self[front.index:],')')
-        if back == None:
-            raise Exception("Mismatched parenthesis for: "+str(self.tokens[front_index:]))                
+        #[] Find Next: ')' -- next occuring after front token
+        back = find_next(self[front.ind:],')')
+        if back == None:    #If there was no ')' in this expression
+            raise Exception("Mismatched parenthesis for: "+str(self.nodes[front_index:]))                
         
-        inner_nest = self.tokens[front.index:back.index]
-        return {'front':front_index,'back':back_index}
+        #[] Get slice of nodes, and turn into an expression
+        #return Expression(self.nodes[(front.ind+1):back.ind])
+        nested_slice = self.nodes[front.ind:(back.ind+1)]
         
-    #------------- Utility Functions
+        return nested_slice
+    def depths(self):
+        depths = []
+        current_depth = 0
+        for i,token in enumerate(self.nodes):      #Depth increments on '(', and decrements on ')'
+            if token == '(':
+                current_depth += 1
+            elif token == ')':
+                current_depth -= 1
+            depths.append( current_depth )
+        if current_depth != 0:      #if it doesn't end at depth == 0
+            Exception("Unbalanced parenthesis for Expressions = ."+str(self))
+        return depths            
+    def replace(self,node_slice,new_node=None):
+        if new_node is None:
+            new_node = Expression(node_slice[1:-1]) #Remove first and last element of slice --> parenthesis
+        #new_node.name = new_node.get_name()
+        new_node.name = " ".join([node.name for node in node_slice])
+        first = node_slice[0].ind
+        last = node_slice[-1].ind + 1
+        self[first:last] = [new_node]
+        self.set_indexes()
+    
+
+
+    
+    #------------- Access & Utility Functions
+    def set_indexes(self):
+        for i in range(len(self.nodes)):
+            self.nodes[i].ind = i
+    def get_contents(self):
+        if len(self.nodes) == 1:    #if this only consists of one node - or has already been processed
+            return self[0].contents
+        else:
+            self.process()
+            return self[0].contents
+    def get_name(self):
+        return " ".join(str(token) for token in self.nodes)
     def __str__(self):
-        return " ".join(str(token) for token in self.tokens)
+        '''Print the string for this object.'''
+        #return " ".join(str(token) for token in self.nodes)
+        return "'"+self.get_name()+"'"
     def __repr__(self):
         if globals().get('pprint',False):   #if module exists
-            return pprint.pformat(self.tokens)
+            return pprint.pformat(self.nodes)
         else:
-            return "["+",\n".join(repr(token) for token in self.tokens)+"]"
+            return "["+",\n".join(repr(token) for token in self.nodes)+"]"
+    def __iter__(self):
+        return iter(self.nodes)
+    #------- Expression['item'] indexing --
     def __getitem__(self,key):  #myTokens['depths']
-        if type(key) == slice:  #slice indexing
-            return self.tokens[key.start:key.stop:key.step]
+        if type(key) == slice or type(key) == int:  #slice indexing
+            return self.nodes[key]
         elif type(key) == str:
-            return [token.__dict__.get(key,None)        #Use 'None' as default value if key does not exist in token 
-                    for token in self.tokens]
-        elif type(key) == int:
-            return self.tokens[key]
+            if key in ['depths','depth']:
+                return self.depths()
+            else:
+                return [token.__dict__.get(key,None)        #Use 'None' as default value if key does not exist in token 
+                    for token in self.nodes]
         else:
             raise KeyError("Invalid key: {0} for {1}".format(repr(key),self.__class__.__name__))
     def __setitem__(self,key,value):
         if type(key) == slice:
-            self.tokens[key.start:key.stop:key.step] = value
+            self.nodes[key.start:key.stop:key.step] = value
         elif type(key) == int:
-             self.tokens[key] = value
-#        accumulator = []
-#        for token in self.tokens:
-#            try:
-#                accumulator.append( token.__dict__[key] )
-#            except:
-#                accumulator.append( None )
-#        return accumulator
-    def names(self):
-        return [token.name for token in self.tokens]
-    def types(self):
-        return [token.type for token in self.tokens]
-    def depths(self):
-        depths = []
-        for token in self.tokens:
-            try:
-                depths.append( token.depth )
-            except:
-                depths.append( -1 )
-        return depths
-            
+            self.nodes[key] = value
+        else:
+            raise KeyError("Invalid key: {0} for {1}".format(repr(key),self.__class__.__name__))
+    def __delitem__(self,key):
+        if type(key) == slice or type(key) == int:
+            del self.nodes[key]
+        elif type(key) == str:
+            for i in range(len(self.nodes)):
+                del self.nodes[i][key]
+        else:
+            raise KeyError("Invalid key: {0} for {1}".format(repr(key),self.__class__.__name__))
+
+#-------- 
+def set_logic(operation,left,right):
+    #operation: and/or/not Token
+    #left/right: Token or Expression
+    if operation == 'and':
+        return (left & right)
+    elif operation == 'or':
+        return (left | right)
+    elif operation == 'not':
+        return (left - right)
+    else:
+        raise Exception("You should never see this set logic error.")
+
+def find_next(haystack,targets):
+    if type(targets) is str:
+        targets = [targets]
         
-
-
+    for elm in haystack:
+        if elm in targets:
+            return elm
+    else:
+        return None
 
 def get_token_strings(in_strings):
     lexer = shlex.shlex(in_strings)
     return list(lexer)
+
+def print_slice(slice):
+    print " ".join([str(elm) for elm in slice])
+
     
 if __name__ == "__main__":
     token_strings = get_token_strings(ex3)
     tokens = [Token(token_str) for token_str in token_strings]
-    raw_token_list = NodeList(tokens)
-    print(raw_token_list[11:14])
-    innermost = raw_token_list.next_nested()
-    print(innermost)
-    #[] Fold the next nest into a single node
-    #~create a new node
-    #insert the new node at the first element of nested slice
-    #cut out the nested range
+    root_expr = Expression(tokens)      #Replace '(' ')' with expressions objects (depth-first)
     
+    root_expr.process()                 #Evaluate - recursively calculating expressions objects
+    repr(root_expr)
+    print(root_expr)
+
+    token_strings = get_token_strings(ex4)
+    tokens = [Token(token_str) for token_str in token_strings]
+    root_expr = Expression(tokens)      #Replace '(' ')' with expressions objects (depth-first)
     
-    print(raw_token_list)
+    root_expr.process()                 #Evaluate - recursively calculating expressions objects
+    repr(root_expr)
+    print(root_expr)
