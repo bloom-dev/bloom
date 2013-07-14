@@ -74,7 +74,10 @@ class images:
 
 class tags:
 	def GET(self):
-		tag_list = _db.query(' SELECT ImageTags.TagID, Tags.name, count(*) as count FROM ImageTags INNER JOIN tags ON ImageTags.tagID = Tags.ID GROUP BY Tags.ID')
+		jtable = _config['tables']['image_tag']['name']
+		imagetable = _config['tables']['image']['name']
+		tagtable = _config['tables']['tag']['name']
+		tag_list = _db.query(' SELECT '+jtable+'.tags_id, '+tagtable+'.name, count(*) as count FROM '+jtable+' INNER JOIN tags ON '+jtable+'.tags_id = '+tagtable+'.id GROUP BY '+tagtable+'.id')
 		#tag_list = _db.select('tags')
 		return _render.tags(tag_list)
 	
@@ -100,9 +103,9 @@ class upload:
 			fout = open(filedir +'/'+ filename,'wb') # creates the file where the uploaded file should be stored
 			fout.write(f.file.read()) # writes the uploaded file to the newly created file.
 			fout.close() # closes the file, upload complete.
-			something = _db.insert('images',file_path=filename)
+			something = _db.insert('images',current_path=filename)
 			make_thumbnail(filename)
-		raise web.seeother('/images')
+		raise web.seeother('/list')
 
 class comingsoon:
 	def GET(self):
@@ -118,7 +121,7 @@ def start():
 #   Utility Functions
 #============================
 def make_thumbnail(filename):
-	os.system(r'convert static/archive/'+ filename +' -auto-orient -thumbnail 150x150 -unsharp 0x.5 static/archive/thumbnails/'+filename)
+	os.system('convert '+os.path.normpath('static/archive/'+ filename) +' -auto-orient -thumbnail 150x150 -unsharp 0x.5 '+os.path.normpath('static/archive/thumbnails/'+filename))
 
 
 if __name__ == "__main__":
@@ -126,5 +129,4 @@ if __name__ == "__main__":
 	mySearch.GET('%')
 	print(tag_search.search_tags('asfkljl3%44123-*3kl+lk_'))
 	print(tag_search.search_tags('boobs or icecream'))
-
 
