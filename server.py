@@ -84,7 +84,7 @@ class tags:
 class image:
 	def GET(self,imageID):
 		image_data = _db.select('images',where='ID = '+imageID)
-		image_tags = _db.query('SELECT ImageID,TagID,Name FROM ImageTags INNER JOIN Tags ON ImageTags.tagID = Tags.ID WHERE ImageID = '+imageID)
+		image_tags = _db.query('SELECT Images_ID,Tags_ID,Name FROM images_tags INNER JOIN tags ON images_tags.tags_ID = tags.ID WHERE images_ID = '+imageID)
 		for image_d in image_data:
 			return _render.image(image_d, image_tags)
 		
@@ -121,7 +121,7 @@ def start():
 #   Utility Functions
 #============================
 def make_thumbnail(filename):
-	os.system('convert '+os.path.normpath('static/archive/'+ filename) +' -auto-orient -thumbnail 150x150 -unsharp 0x.5 '+os.path.normpath('static/archive/thumbnails/'+filename))
+	os.system('convert \"'+os.path.normpath('static/archive/'+ filename) +'\" -auto-orient -thumbnail 150x150 -unsharp 0x.5 \"'+os.path.normpath('static/archive/thumbnails/'+filename)+'\"')
 
 
 if __name__ == "__main__":
