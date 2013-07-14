@@ -10,13 +10,14 @@ import sqlite3 as sql		#can easily be replaced with other SQL
 from organizers import Configuration     #Used to read JSON/XML configuration files.
 import tag_search
 
+
+#---------- Parameters
 #setup for web.py
 _config = Configuration.read("settings.json")
 _db = web.database(dbn='sqlite',db='bloom.db')
 _render = web.template.render('templates/',base='wrapper')
 _render_naked = web.template.render('templates/')
-#---------- Parameters
-_param = Configuration()
+
 
 
 #============================
@@ -47,14 +48,19 @@ class search:
 			result = _db.select('images')
 			return _render.images(result)
 		else:
-			return tag_search.sqlite_is_bad(self,tags_string)
-			#return tag_search.sqlite_is_bad(self,tags_string)
-			
-			#return tag_search.search_good_db(self,tags_string) #-do this is you're using postgre, MSSQL, or oracle
+			try:
+				result = tag_search.search_tags(tags_string)
+				_render.images(result)
+			except Exception as exc:
+				#Search error page needs to go here.
+				raise
+			#return tag_search.sqlite_is_bad(tags_string)
+			#return tag_search.search_good_db(tags_string) #-do this is you're using postgre, MSSQL, or oracle
 
 	def POST(self,tags=''):
 		x = web.input(searchstr='')
 		web.seeother('/list/'+x.searchstr.replace(' ','_'))
+
 
 class index:
 	def GET(self):
@@ -71,12 +77,14 @@ class tags:
 		tag_list = _db.query(' SELECT ImageTags.TagID, Tags.name, count(*) as count FROM ImageTags INNER JOIN tags ON ImageTags.tagID = Tags.ID GROUP BY Tags.ID')
 		#tag_list = _db.select('tags')
 		return _render.tags(tag_list)
+	
 class image:
 	def GET(self,imageID):
 		image_data = _db.select('images',where='ID = '+imageID)
 		image_tags = _db.query('SELECT ImageID,TagID,Name FROM ImageTags INNER JOIN Tags ON ImageTags.tagID = Tags.ID WHERE ImageID = '+imageID)
 		for image_d in image_data:
 			return _render.image(image_d, image_tags)
+		
 class upload:
 	def GET(self):
 		return _render.upload()
@@ -112,50 +120,11 @@ def start():
 def make_thumbnail(filename):
 	os.system(r'convert static/archive/'+ filename +' -auto-orient -thumbnail 150x150 -unsharp 0x.5 static/archive/thumbnails/'+filename)
 
-#@deprecated: no longer used
-def get_tagID(tagname):
-	rows = _db.select('tags',where='name='+tagname)
-	for r in rows:
-		return r.id
-
-
-
-#============================
-# Oakland's Cleanup Code
-#============================
-def grouper(iterable, n, fillvalue=None):
-    '''Collect data into fixed-length chunks or blocks.'''
-    # grouper('ABCCDEFG', 3, 'x') --> ABC DEF Gxx
-    args = [iter(iterable)] * n
-    return izip_longest(fillvalue=fillvalue,*args)
-    
-def get_section(page_sz=10):
-    total = range(100)
-    for section in grouper(total,page_sz):
-        yield section
-
-def get_tag_data(tag_name,column_name='id',page_size=None):
-	_db.select('tags',where='name '+tag_name)
-	while False:
-		pass
-	
-def get_tag_ids(tag_name):
-	'''Returns a list of tag ids associated with 'tag_name'.'''
-	_db.select('tags',where='name='+tag_name)
-
-
 
 if __name__ == "__main__":
-	boobset = set()
-	boobset.add(1)
-	boobset.add(2)
-	iceset = set()
-	iceset.add(1)
-	iceset.add(4)
-	iceset.add(3)
-	paraset = set()
-	paraset.add(3)
-	#print(sqlite_needs_help("(boobs or ice) and parasite",{'boobs':boobset, 'ice':iceset, 'parasite':paraset}))
-	print(tag_search.sqlite_is_bad(None,'boobs or icecream'))
+	mySearch = search()
+	mySearch.GET('%')
+	print(tag_search.search_tags('asfkljl3%44123-*3kl+lk_'))
+	print(tag_search.search_tags('boobs or icecream'))
 
 
