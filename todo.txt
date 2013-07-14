@@ -3,3 +3,31 @@
 ======= Tag-Search
 [] get_image_ids(): uses SQL command that selects from interm/testing tables (ImageTags, etc)
   --> switch to using table names as specified in _config
+[] Alter db.query() / db.select() statements to resist sql injection:
+	To prevent SQL injection attacks, db.query also accepts the "vars" syntax as described in db.select:
+	
+	results = db.query("SELECT * FROM users WHERE id=$id", vars={'id':10})
+	This will escape user input, if you're trusting them for the "id" variable.
+[] search_sqlite(): Have invalid lex.validate(tokens) --> render an error webpage 
+
+======= Adding Tags to DB
+[] Adding tags to images
+  [1] First, Python code portion
+  [2] Then, build file to load test images, and apply tags
+  [3] Then, web-page interface -- on each image page (/image/6 etc) - textbox + button for 'add tag'
+  [4] Advanced: right-click context menu for thumbnail of images and individual-image pages
+      --> 'Add Tag' --> Pop-box to enter new tag name
+      [] Even more advanced/future-project: add autocompletion 
+[] Improve tag upload process
+  [] Add default tag 'all'
+  [] Add date of upload
+  [] Record original file name, and current file path
+  [] Add image hash - use SHA1
+  [] Add hook for comparing the image HASH
+  
+  
+======== Advanced Tasks
+[] Tag auto-completion
+  [] Caching of tag list
+[] Tag 'synonym' process (ex. 'tits' == 'boobs')
+  ?? Perhaps handled by suggesting alternate search-string ??

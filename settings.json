@@ -11,8 +11,9 @@
 			"columns": [
 				["id","INTEGER","NOT NULL PRIMARY KEY"],
 				["original_name","VARCHAR(255)",""],
-				["file_path","VARCHAR(255)",""],
-				["hash","VARCHAR(40)",""]
+				["current_path","VARCHAR(255)",""],
+				["hash","VARCHAR(40)",""],
+				["upload_date","NUMERIC",""]
 			]
 		},
 		"tag": {
@@ -24,11 +25,11 @@
 			]
 		},
 		"image_tag": {
-			"name":"image_tag",
+			"name":"images_tags",
 			"columns": [
-				["image_tag_id","INTEGER","NOT NULL PRIMARY KEY"],
-				["image_id","INTEGER","NOT NULL"],
-				["tag_id","INTEGER","NOT NULL"]
+				["images_tags_id","INTEGER","NOT NULL PRIMARY KEY"],
+				["images_id","INTEGER","NOT NULL"],
+				["tags_id","INTEGER","NOT NULL"]
 			]
 		}
 	}

@@ -2,10 +2,10 @@
 import re
 #----------- Semi-Standard Library
 import web                    #web.py code, includes db access
-#import sqlite3 as sql        #can easily be replaced with other SQL
+import sqlite3 as sql        #can easily be replaced with other SQL
 #----------- Custom Library
 from organizers import Configuration     #Used to read JSON/XML configuration files.
-import lexical_parser                    #Parses Abstract Syntax Tree, for tokens in ('and','or','not','TAG_NAME')
+import lexical_parser as lex             #Parses Abstract Syntax Tree, for tokens in ('and','or','not','TAG_NAME')
 
 
 
@@ -19,7 +19,9 @@ _render_naked = web.template.render('templates/')
 
 
 #[] Flow-Control: function which calls all of the parts in sequence
-    #[] v1: Uses Paarth's code only
+    #[] Split: sqlite_is_bad around the line: processed_imageset = sqlite_needs_help
+#[] Refactor: lexical_parser - to feed the content = ids in explicitly in calling code
+    #[] Remove the test data from the Token() 
 #[] Abstract: function to build itags dict
 #[] Work Paarth's code into
 
@@ -29,10 +31,235 @@ _render_naked = web.template.render('templates/')
 #============================
 #Function Sequence: enters at sqlite_is_bad, or search_good_db
 
-def search_tags():
-    pass
+def search_tags(tags_string):
+    if _config['sql_engine']=="sqlite":
+        return search_sqlite(tags_string)
+        #return search_sqlite(tags_string)
+    elif _config['sql_engine'] in ["postgre","postgresql","mssql","oracle"]:
+        return search_good_db(tags_string)
+    else:
+        raise Exception("Unrecognized sql_engine: "+_config['sql_engine'])
 
 
+def search_sqlite(searchstr):
+    #Used to be 'sqlite_is_bad()'
+    tokens = [lex.Token(name) for name in lex.tokenize(searchstr)]
+    try:
+        lex.validate(tokens)    #bitches if token names are wrong
+    except Exception as exc:
+        #This should be turned into an error page.
+        raise exc
+    tags = [t.name for t in tokens
+            if t.type == 'tag']
+    itags = get_image_ids_v2(tags)
+    
+    lex.set_tag_ids(tokens,itags)
+    processed_ids = lex.evaluate(tokens)
+    return render_image_ids(processed_ids)
+
+def get_image_ids(tags):
+    '''Returns dict of tag_name:[image_ids].'''
+    #CODE SPLIT FROM sqlite_is_bad()
+    itags = {}
+    for tag in tags:
+        #@todo: this will need to be changed for the new table structure
+        #@todo: project this from SQL injection via the vars={} parameter
+        sql_select = ' SELECT ImageID FROM ImageTags INNER JOIN Tags ON ImageTags.tagID = Tags.ID WHERE Tags.name = \''+tag+'\' '
+        tagdata = _db.query(sql_select)
+        
+        itags[tag] = set(t.ImageID for t in tagdata)
+    return itags
+
+def render_image_ids(processed_ids):
+    wherestring = ''
+    for image_id in processed_ids:
+        if len(wherestring) > 0:
+            wherestring += ' OR '
+        wherestring += ('id = ' + str(image_id))
+
+    if len(wherestring) == 0:
+        wherestring="null"
+    result = _db.select('images',where=wherestring)
+    return result
+
+
+
+
+
+##@deprecated: 
+#def search_sqlite(searchstr):
+#    #Used to be called: sqlite_is_bad()
+#    itags = get_image_ids(searchstr)
+#    processed_imageset = sqlite_needs_help(searchstr.replace('_',' '),itags)
+#
+#    print("processed imageset: ")
+#    print(processed_imageset)
+#
+#    # each of the images are used to assemble a wherestring, similarly to how it is done in search_good_db.
+#    # the same process is used twice and this should probably be its own function.
+#    wherestring = ''
+#    for imageid in processed_imageset:
+#        if len(wherestring) > 0:
+#            wherestring += ' OR '
+#        wherestring += ('id = ' + str(imageid))
+#
+#    if len(wherestring) == 0:
+#        wherestring="null"
+#    result = _db.select('images',where=wherestring)
+#    return _render.images(result)
+#
+#
+#    
+##@deprecated: 
+#def old_get_image_ids(searchstr):
+#    #CODE SPLIT FROM sqlite_is_bad()
+#    pattern = re.compile(re.escape('and'), re.IGNORECASE)
+#    working_string = pattern.sub ('', searchstr.replace('_',' '))
+#    pattern = re.compile(re.escape('or'), re.IGNORECASE)
+#    working_string = pattern.sub ('', working_string)
+#    working_string = working_string.replace('(','').replace(')','')
+#
+#
+#    #---------- Crucial Variable
+#    #itags: dict of 'tag_name':[tag_ids,...] 
+#    itags = {}
+#
+#    working_string = ' '.join(working_string.split()) #make sure that there is only one space between each entry
+#    tags = working_string.split(' ') # tags is now a list of tag names.
+#
+#    for tag in tags:
+#        #NOTE: this will need to be changed for the new table structure
+#        sql_select = ' SELECT ImageID FROM ImageTags INNER JOIN Tags ON ImageTags.tagID = Tags.ID WHERE Tags.name = \''+tag+'\' '
+#        tagdata = _db.query(sql_select)
+#        
+#        itags[tag] = set(t.ImageID for t in tagdata)
+#    return itags
+#
+#def sqlite_needs_help(searchstr,itags):
+#    # REAL TERROR
+#    # This class take in the original search string that the user input and a dictionary
+#    # that lists tags and the set of images associated with that tag. Using them, it returns
+#    # the set of images that the search string evaluates to.
+#    #
+#    # This function is both iterative and recursive. #xYOLOx420xGGx
+#
+#    # This function has two special cases: 
+#    #    If there are parenthesis, it executes itself on the inner string first
+#    #    If there is only one word then it returns the set associated with that tag
+#    #
+#    #    If it comes to the rest of the function, that means that we are left with a flat
+#    #    string with only tags and the 'and'/'or' keywords. We can now process the string.
+#    #    This happens by looping while there are 'and's in the string, and then while there
+#    #    are 'or'. In each loop step we combine the 'and' term with its neighbors (its operands)
+#    #    and then delete the other two terms so that the result may be used with the next tag.
+#    #
+#    #    For example:
+#    #
+#    #    set AND set OR set
+#    #
+#    #            will become..
+#    #
+#    #    set OR set
+#    #
+#    #    eventually we will be left with one set, which is returned.
+#    #    the and step happens before the OR to enforce the order of operations where AND
+#    #    is more tightly binding.
+#    searchstr = searchstr.strip()
+#    searchstr = searchstr.replace('_',' ').encode('ascii','ignore') # for some reason it was in unicode which didn't play nice with the db
+#    print("search string: "+searchstr)
+#    print(type(searchstr))
+#
+#
+#    eval_list = []
+#    # so eval list is somewhat creative and somewhat fucking stupid. I did not want
+#    # to replace the string that used to be in the search string with something 
+#    # arbitrary because that could collide with the tag that the user inputs. Instead,
+#    # I made it so that the content that is inside parenthesis is removed and we are 
+#    # left with a '()' where it used to be. When the evaluator (the iterative part) of
+#    # the function reaches one of those ()'s, it pulls the entry off the front of the
+#    # eval_list (which works like a queue) and uses it in the set operation. 
+#
+#
+#    print('Entering SQLNH: '+searchstr)
+#
+#    # recurse if there are parenthesis in the string.
+#    if '(' in searchstr or ')' in searchstr:
+#        print('parens search '+searchstr)
+#        inner = re.search( "\((.*)\)" ,searchstr).group(1)
+#        eval_list.append(sqlite_needs_help(inner, itags))
+#        searchstr = searchstr.replace(inner,"",1)
+#
+#    #return the set of images associated with a tag if that tag is the only thing there.
+#    if not ' ' in searchstr.strip():
+#        if searchstr.strip() in itags:
+#            return itags[searchstr]
+#        else:
+#            raise NameError('invalid tag: '+searchstr)
+#
+#    #begin the evaluating process, otherwise.
+#    else:
+#        pieces = searchstr.split(' ')
+#
+#        while 'and' in pieces: # while there are still unprocessed and_tags, deal with them.
+#            inf_index = pieces.index('and')
+#            if inf_index == 0 or inf_index == (len(pieces) -1):
+#                # if the and is at the beginning or the end of a list it is malformed and an
+#                # exception should be raised.
+#                raise NameError('and is infix')
+#            print(pieces[inf_index-1])
+#            print(pieces[inf_index])
+#            print(pieces[inf_index+1])
+#            print(type(pieces[inf_index-1]))
+#
+#            # if the operands are strings, evaluate them into imagesets.
+#            if type(pieces[inf_index-1]) is str:
+#                if '()' in pieces[inf_index-1]:
+#                    pieces[inf_index-1] = eval_list[0]
+#                    del eval_list[0]
+#                else:
+#                    pieces[inf_index-1] = sqlite_needs_help(pieces[inf_index-1],itags)
+#            if type(pieces[inf_index+1]) is str:
+#                if '()' in pieces[inf_index+1]:
+#                    pieces[inf_index+1] = eval_list[0]
+#                    del eval_list[0]
+#                else:
+#                    pieces[inf_index+1] = sqlite_needs_help(pieces[inf_index+1],itags)
+#
+#            #perform the set operation.
+#            combined = pieces[inf_index-1] & pieces[inf_index+1]
+#            pieces[inf_index-1] = combined
+#            #remove the extraneous entries.
+#            del pieces[inf_index]
+#            del pieces[inf_index]
+#
+#        # the same thing as the and, but for or. 
+#        while 'or' in pieces:
+#            inf_index = pieces.index('or')
+#            if inf_index == 0 or inf_index == (len(pieces) -1):
+#                raise NameError('or is infix')
+#            if type(pieces[inf_index-1]) is str:
+#                if '()' in pieces[inf_index-1]:
+#                    pieces[inf_index-1] = eval_list[0]
+#                    del eval_list[0]
+#                else:
+#                    pieces[inf_index-1] = sqlite_needs_help(pieces[inf_index-1],itags)
+#            if type(pieces[inf_index+1]) is str:
+#                if '()' in pieces[inf_index+1]:
+#                    pieces[inf_index+1] = eval_list[0]
+#                    del eval_list[0]
+#                else:
+#                    pieces[inf_index+1] = sqlite_needs_help(pieces[inf_index+1],itags)
+#            combined = pieces[inf_index-1] | pieces[inf_index+1]
+#            pieces[inf_index-1] = combined
+#            del pieces[inf_index]
+#            del pieces[inf_index]
+#        if len(pieces) == 1:
+#            return pieces[0]
+
+#==========================================
+#  Non-sqlite Functions
+#==========================================
+#postgresql, oracle, mssql
 def transform_to_sql(searchstr=''):
     #This is the helper function for when a database that supports nested intersects is used. 
     #Conveniently, the tag set op structure we have (x and y or z) can translate directly 
@@ -85,176 +312,32 @@ def search_good_db(self, tags):
     result = _db.select('images',where=wherestring) #get the imageset and place it in result
     return _render.images(result) #render the page and return the templated string.
 
-def sqlite_needs_help(searchstr,itags):
-    # REAL TERROR
-    # This class take in the original search string that the user input and a dictionary
-    # that lists tags and the set of images associated with that tag. Using them, it returns
-    # the set of images that the search string evaluates to.
-    #
-    # This function is both iterative and recursive. #xYOLOx420xGGx
-
-    # This function has two special cases: 
-    #    If there are parenthesis, it executes itself on the inner string first
-    #    If there is only one word then it returns the set associated with that tag
-    #
-    #    If it comes to the rest of the function, that means that we are left with a flat
-    #    string with only tags and the 'and'/'or' keywords. We can now process the string.
-    #    This happens by looping while there are 'and's in the string, and then while there
-    #    are 'or'. In each loop step we combine the 'and' term with its neighbors (its operands)
-    #    and then delete the other two terms so that the result may be used with the next tag.
-    #
-    #    For example:
-    #
-    #    set AND set OR set
-    #
-    #            will become..
-    #
-    #    set OR set
-    #
-    #    eventually we will be left with one set, which is returned.
-    #    the and step happens before the OR to enforce the order of operations where AND
-    #    is more tightly binding.
-    searchstr = searchstr.strip()
-    searchstr = searchstr.replace('_',' ').encode('ascii','ignore') # for some reason it was in unicode which didn't play nice with the db
-    print("search string: "+searchstr)
-    print(type(searchstr))
-
-
-    eval_list = []
-    # so eval list is somewhat creative and somewhat fucking stupid. I did not want
-    # to replace the string that used to be in the search string with something 
-    # arbitrary because that could collide with the tag that the user inputs. Instead,
-    # I made it so that the content that is inside parenthesis is removed and we are 
-    # left with a '()' where it used to be. When the evaluator (the iterative part) of
-    # the function reaches one of those ()'s, it pulls the entry off the front of the
-    # eval_list (which works like a queue) and uses it in the set operation. 
-
-
-    print('Entering SQLNH: '+searchstr)
-
-    # recurse if there are parenthesis in the string.
-    if '(' in searchstr or ')' in searchstr:
-        print('parens search '+searchstr)
-        inner = re.search( "\((.*)\)" ,searchstr).group(1)
-        eval_list.append(sqlite_needs_help(inner, itags))
-        searchstr = searchstr.replace(inner,"",1)
-
-    #return the set of images associated with a tag if that tag is the only thing there.
-    if not ' ' in searchstr.strip():
-        if searchstr.strip() in itags:
-            return itags[searchstr]
-        else:
-            raise NameError('invalid tag: '+searchstr)
-
-    #begin the evaluating process, otherwise.
-    else:
-        pieces = searchstr.split(' ')
-
-        while 'and' in pieces: # while there are still unprocessed and_tags, deal with them.
-            inf_index = pieces.index('and')
-            if inf_index == 0 or inf_index == (len(pieces) -1):
-                # if the and is at the beginning or the end of a list it is malformed and an
-                # exception should be raised.
-                raise NameError('and is infix')
-            print(pieces[inf_index-1])
-            print(pieces[inf_index])
-            print(pieces[inf_index+1])
-            print(type(pieces[inf_index-1]))
-
-            # if the operands are strings, evaluate them into imagesets.
-            if type(pieces[inf_index-1]) is str:
-                if '()' in pieces[inf_index-1]:
-                    pieces[inf_index-1] = eval_list[0]
-                    del eval_list[0]
-                else:
-                    pieces[inf_index-1] = sqlite_needs_help(pieces[inf_index-1],itags)
-            if type(pieces[inf_index+1]) is str:
-                if '()' in pieces[inf_index+1]:
-                    pieces[inf_index+1] = eval_list[0]
-                    del eval_list[0]
-                else:
-                    pieces[inf_index+1] = sqlite_needs_help(pieces[inf_index+1],itags)
-
-            #perform the set operation.
-            combined = pieces[inf_index-1] & pieces[inf_index+1]
-            pieces[inf_index-1] = combined
-            #remove the extraneous entries.
-            del pieces[inf_index]
-            del pieces[inf_index]
-
-        # the same thing as the and, but for or. 
-        while 'or' in pieces:
-            inf_index = pieces.index('or')
-            if inf_index == 0 or inf_index == (len(pieces) -1):
-                raise NameError('or is infix')
-            if type(pieces[inf_index-1]) is str:
-                if '()' in pieces[inf_index-1]:
-                    pieces[inf_index-1] = eval_list[0]
-                    del eval_list[0]
-                else:
-                    pieces[inf_index-1] = sqlite_needs_help(pieces[inf_index-1],itags)
-            if type(pieces[inf_index+1]) is str:
-                if '()' in pieces[inf_index+1]:
-                    pieces[inf_index+1] = eval_list[0]
-                    del eval_list[0]
-                else:
-                    pieces[inf_index+1] = sqlite_needs_help(pieces[inf_index+1],itags)
-            combined = pieces[inf_index-1] | pieces[inf_index+1]
-            pieces[inf_index-1] = combined
-            del pieces[inf_index]
-            del pieces[inf_index]
-        if len(pieces) == 1:
-            return pieces[0]
 
 
 
+#============================
+# Oakland's Cleanup Code
+#============================
+def get_tag_ids(tags):
+    '''Returns a dict of lists of tag ids.'''
+    for section in grouper():
+        pass
+def grouper(iterable, n, fillvalue=None):
+    '''Collect data into fixed-length chunks or blocks.'''
+    # grouper('ABCCDEFG', 3, 'x') --> ABC DEF Gxx
+    args = [iter(iterable)] * n
+    return izip_longest(fillvalue=fillvalue,*args)
+    
+def get_section(page_sz=10):
+    total = range(100)
+    for section in grouper(total,page_sz):
+        yield section
 
-def sqlite_is_bad(self,searchstr):
-    # As said in the function name, SQLite is bad and so we need to do the set operations ourselves
-    # (it doesn't support nesting). This function accomplishes this.
-    # 
-
-    # working string eventually becomes the a flat string of tags separated by spaces
-    # the working string is then looped thorugh to generate the {tag:imageset} dict, itags
-    pattern = re.compile(re.escape('and'), re.IGNORECASE)
-    working_string = pattern.sub ('', searchstr.replace('_',' '))
-    pattern = re.compile(re.escape('or'), re.IGNORECASE)
-    working_string = pattern.sub ('', working_string)
-    working_string = working_string.replace('(','').replace(')','')
-
-
-    #---------- Crucial Variable
-    #itags: dict of 'tag_name':[tag_ids,...] 
-    itags = {}
-
-    working_string = ' '.join(working_string.split()) #make sure that there is only one space between each entry
-    tags = working_string.split(' ') # tags is now a list of tag names.
-
-    for tag in tags:
-        print('sqlib tag: '+tag) # REAL MAN.
-        tagdata = _db.query(' SELECT ImageID FROM ImageTags INNER JOIN Tags ON ImageTags.tagID = Tags.ID WHERE Tags.name = \''+tag+'\' ')
-        imageset = set() #the set of images associated with the tag.
-        for t in tagdata:
-            imageset.add(t.ImageID) # add images to the set.
-        itags[tag] = imageset # list it in the dict.
-    print("processed imageset beginning with " +searchstr)
-
-    # MAGIC FUNCTION TIME. sqlite_needs_help is called which takes the original statement and the tag dictionary
-    # and does magic on it to condense the result into a set of images
-    processed_imageset = sqlite_needs_help(searchstr.replace('_',' '),itags)
-
-    print("processed imageset: ")
-    print(processed_imageset)
-
-    # each of the images are used to assemble a wherestring, similarly to how it is done in search_good_db.
-    # the same process is used twice and this should probably be its own function.
-    wherestring = ''
-    for imageid in processed_imageset:
-        if len(wherestring) > 0:
-            wherestring += ' OR '
-        wherestring += ('id = ' + str(imageid))
-
-    if len(wherestring) == 0:
-        wherestring="null"
-    result = _db.select('images',where=wherestring)
-    return _render.images(result)
+def get_tag_data(tag_name,column_name='id',page_size=None):
+    _db.select('tags',where='name '+tag_name)
+    while False:
+        pass
+    
+def get_tag_ids(tag_name):
+    '''Returns a list of tag ids associated with 'tag_name'.'''
+    _db.select('tags',where='name='+tag_name)
