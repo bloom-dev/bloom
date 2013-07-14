@@ -39,6 +39,7 @@ _param.logicals = ['and','or','not']
 _param.valid_tag_re = "^[A-Za-z0-9_-]*$"   #letters, numbers, '-', and '_'. All others - reserved categories.
 
 
+
 class Token(object):
     '''Token types may be '(',')','and','or','not','tag'.
     Two types of creation:
@@ -52,11 +53,13 @@ class Token(object):
     '''
     def __init__(self,token_string=None,name=None,contents=None):
         if token_string is not None:    #Method #1: Standard - create token from input string
+            #replaces token_string with the first entry in category
+            #    Ex.  '[' --> '(',  '&' --> 'and'
             for category in _param.token_categories:    #If token is in one of the reserved categories
-                if token_string in category:
+                if token_string in category:    
                     self.type = category[0]         #Standard representation
                     self.name = category[0]         #self.name = token_string
-                    break
+                    return
             else:   #If token is not one of the TokenCategories - IE the 'for' did not break
                 if re.match(_param.valid_tag_re,token_string):
                     self.type = 'tag'
@@ -65,13 +68,15 @@ class Token(object):
                     if contents is None:
                         self.contents = tags[token_string]         #ONLY USED IN DEBUGING - should be replaced by SQL calls
                     else:
-                        self.contents = contents    
+                        self.contents = contents
+                    return
                 else:   #Invalid string
                     raise Exception("Invalid tag name - {0} contains a forbidden character.".format(token_string))
         elif name is not None and contents is not None: #Method #2 - Combined: 
             self.type = 'tag'
             self.name = name
             self.contents = contents
+            return
         else:
             raise Exception("Invalid Token initialization: either specify a single token_string, OR specify a name and contents (by Keywords).")
     def get_contents(self): #Used to provide a generic contents access method between expressions and Tokens
@@ -83,6 +88,8 @@ class Token(object):
         return self.name
     def __repr__(self):
         return str(self.__dict__)
+    def __getitem__(self,key):  #translates: Token()['contents']-->Token().contents
+        return self.__getattribute__(key)
     def __eq__(self,other):   # Logical equality '==' operator
         return str(self.name) == str(other)
     def __contains__(self,item):   #"item in TAG"/"item not in TAG"
@@ -108,8 +115,16 @@ class Expression(object):
         '''Assumes all parenthesis have been removed, and replaced with Expressions.'''
         if token is None:
             #Process left-to-right (~doesn't worry about precedence atm)
+            
             if len(self.nodes) == 1:
-                return 
+                if self[0].type == 'expression':
+                    self.nodes[0].process()
+                elif self[0].type == 'tag':   #If it is a tag
+                    pass    #Do nothing
+                else:   #It is in ['and','or','not']
+                    raise Exception("Invalid Expression = {0}".format(self.nodes))
+                     
+                 
             for token in self:
                 self.process(token)   #This does nothing for 'tag' Tokens()
                 #self.process(token.index)
@@ -135,9 +150,7 @@ class Expression(object):
                 new_node = Token(name=new_name,contents=new_set)
                 node_slice = self.nodes[left.ind:(right.ind+1)]
                 
-                print(repr(self))
                 self.replace(node_slice,new_node)
-                print(repr(self))
  
     
     #----------- Replacing Sub-Expressions
@@ -203,8 +216,11 @@ class Expression(object):
         for i in range(len(self.nodes)):
             self.nodes[i].ind = i
     def get_contents(self):
-        if len(self.nodes) == 1:    #if this only consists of one node - or has already been processed
-            return self[0].contents
+        if len(self.nodes) == 1:    #if this only consists of one node - such as for (1) already processed expressions, or (2) expressions containing expressions
+            if self.nodes[0].type == 'expression':
+                return self[0].get_contents()
+            else:
+                return self[0].contents
         else:
             self.process()
             return self[0].contents
@@ -228,6 +244,8 @@ class Expression(object):
         elif type(key) == str:
             if key in ['depths','depth']:
                 return self.depths()
+            elif key in ['content','contents']:
+                return [node.get_contents() for node in self.nodes]
             else:
                 return [token.__dict__.get(key,None)        #Use 'None' as default value if key does not exist in token 
                     for token in self.nodes]
@@ -249,7 +267,9 @@ class Expression(object):
         else:
             raise KeyError("Invalid key: {0} for {1}".format(repr(key),self.__class__.__name__))
 
-#-------- 
+#=====================================
+#  Utility Functions
+#=====================================
 def set_logic(operation,left,right):
     #operation: and/or/not Token
     #left/right: Token or Expression
@@ -272,22 +292,25 @@ def find_next(haystack,targets):
     else:
         return None
 
-def get_token_strings(in_strings):
-    lexer = shlex.shlex(in_strings)
+def tokenize_strings(in_strings):
+    lexer = shlex.shlex(in_strings) #intelligently splits on spaces or parenthesis/brackets
     return list(lexer)
 
 def print_slice(slice):
     print " ".join([str(elm) for elm in slice])
+    
+
 
     
 if __name__ == "__main__":
-    token_strings = get_token_strings(ex3)
+    token_strings = tokenize_strings(ex3)
     tokens = [Token(token_str) for token_str in token_strings]
     root_expr = Expression(tokens)      #Replace '(' ')' with expressions objects (depth-first)
     
     root_expr.process()                 #Evaluate - recursively calculating expressions objects
     repr(root_expr)
     print(root_expr)
+    print(root_expr.get_contents())
 
     token_strings = get_token_strings(ex4)
     tokens = [Token(token_str) for token_str in token_strings]
@@ -296,3 +319,4 @@ if __name__ == "__main__":
     root_expr.process()                 #Evaluate - recursively calculating expressions objects
     repr(root_expr)
     print(root_expr)
+    print(root_expr.get_contents())

@@ -2,6 +2,7 @@
 	"basedir": "D:\\oldpics\\",
 	"port": "8000",
 	"repodir": "C:/brazen",
+	"sql_engine":"sqlite",
 	"image_archive": "images",
 	"bloom_db": "bloom.db",
 	"tables": {
