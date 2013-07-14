@@ -1,0 +1,8 @@
+
+
+==== Tag-Searching
+[] Search String = 'not boobs'
+	Causes error in sqlite_is_bad() at 
+	wherestring = ''
+    for imageid in processed_imageset:
+    TypeError: 'NoneType' object is not iterable

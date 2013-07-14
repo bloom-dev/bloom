@@ -1,0 +1,5 @@
+
+
+======= Tag-Search
+[] get_image_ids(): uses SQL command that selects from interm/testing tables (ImageTags, etc)
+  --> switch to using table names as specified in _config
