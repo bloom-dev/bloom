@@ -1,19 +1,20 @@
 #= The web server aspect of bloom
 
 #----------- Standard Library 
-import os
+import os,sys
 import re
 #----------- Semi-Standard Library
 import web					#web.py code, includes db access
 import sqlite3 as sql		#can easily be replaced with other SQL
 #----------- Custom Library
+sys.path.append('modules/') #Put the modules directory in the pythonpath
 from organizers import Configuration     #Used to read JSON/XML configuration files.
 import tag_search
 
 
 #---------- Parameters
 #setup for web.py
-_config = Configuration.read("settings.json")
+_config = Configuration.read("configs/settings.json")
 _db = web.database(dbn='sqlite',db='bloom.db')
 _render = web.template.render('templates/',base='wrapper')
 _render_naked = web.template.render('templates/')
@@ -122,8 +123,6 @@ def make_thumbnail(filename):
 
 
 if __name__ == "__main__":
-	mySearch = search()
-	mySearch.GET('%')
 	print(tag_search.search_tags('asfkljl3%44123-*3kl+lk_'))
 	print(tag_search.search_tags('boobs or icecream'))
 

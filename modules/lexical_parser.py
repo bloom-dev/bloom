@@ -232,6 +232,7 @@ class Expression(object):
                 return elm
         else:
             return None
+        
 #=====================================
 #  Utility Functions
 #=====================================
@@ -254,7 +255,13 @@ def tokenize(in_string):
 def print_slice(slice):
     print " ".join([str(elm) for elm in slice])
     
-
+def set_tag_ids(tokens,tags_dict):
+    ''' tokens: list of Token() objects
+        tags_dict: dict of tag names, containing lists of ids.
+    '''
+    for tok in tokens:
+        if tok.type == 'tag':
+            tok.contents = tags_dict[tok.name]
 
 
 #--------- Examples and Debugging Code -------
@@ -277,13 +284,7 @@ _testing['invalid'] = [
     '(boobs and tits) not (wangs and (peoples or mountains)',
     'boobs and not tits'
     ]
-def set_tag_ids(tokens,tags_dict):
-    ''' tokens: list of Token() objects
-        tags_dict: dict of tag names, containing lists of ids.
-    '''
-    for tok in tokens:
-        if tok.type == 'tag':
-            tok.contents = tags_dict[tok.name]
+
 
 
 if __name__ == "__main__":
