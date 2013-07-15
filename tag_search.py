@@ -1,21 +1,30 @@
 #----------- Standard Library 
-import re
+import re,sys
 #----------- Semi-Standard Library
 import web                    #web.py code, includes db access
 import sqlite3 as sql        #can easily be replaced with other SQL
 #----------- Custom Library
+sys.path.append('modules/') #Put the modules directory in the pythonpath
 from organizers import Configuration     #Used to read JSON/XML configuration files.
 import lexical_parser as lex             #Parses Abstract Syntax Tree, for tokens in ('and','or','not','TAG_NAME')
 
 
 
 #setup for web.py
-_config = Configuration.read("settings.json")
+_config = Configuration.read("configs/settings.json")
 _db = web.database(dbn='sqlite',db='bloom.db')
 _render = web.template.render('templates/',base='wrapper')
 _render_naked = web.template.render('templates/')
-
-
+_naming = Configuration.read("configs/sql_naming.json")
+#_naming = {
+#    'tags_table':'tags',
+#    'images_table':'images',
+#    'join_table':'images_tags',
+#    'join_table_id_col':'images_tags_id',
+#    'images_id_col':'images_id',
+#    'tags_id_col':'tags_id',
+#    'tags_name_col':'name'
+#    }
 
 
 #[] Flow-Control: function which calls all of the parts in sequence
@@ -51,7 +60,7 @@ def search_sqlite(searchstr):
         raise exc
     tags = [t.name for t in tokens
             if t.type == 'tag']
-    itags = get_image_ids_v2(tags)
+    itags = get_image_ids(tags)
     
     lex.set_tag_ids(tokens,itags)
     processed_ids = lex.evaluate(tokens)
@@ -64,7 +73,12 @@ def get_image_ids(tags):
     for tag in tags:
         #@todo: this will need to be changed for the new table structure
         #@todo: project this from SQL injection via the vars={} parameter
-        sql_select = ' SELECT ImageID FROM ImageTags INNER JOIN Tags ON ImageTags.tagID = Tags.ID WHERE Tags.name = \''+tag+'\' '
+        sql_select = '''SELECT {images_id_col} 
+                        FROM {join_table} INNER JOIN {tags_table} 
+                            ON {join_table}.{tags_id_col} = {tags_table}.{tags_id_col}
+                        WHERE {tags_table}.{tags_name_col} = '{tag_val}';'''.format(
+                            tag_val=tag,**_naming.dict())
+        #sql_select = ' SELECT ImageID FROM ImageTags INNER JOIN Tags ON ImageTags.tagID = Tags.ID WHERE Tags.name = \''+tag+'\' '
         tagdata = _db.query(sql_select)
         
         itags[tag] = set(t.ImageID for t in tagdata)
@@ -316,28 +330,22 @@ def search_good_db(self, tags):
 
 
 #============================
-# Oakland's Cleanup Code
+# Oakland's Code In Progress
 #============================
+
+#@Incomplete
 def get_tag_ids(tags):
     '''Returns a dict of lists of tag ids.'''
-    for section in grouper():
-        pass
+    paging_size = 20
+    for section in grouper(tags,paging_size):
+        _db.select('tags',where='name='+tag_name)
+        
 def grouper(iterable, n, fillvalue=None):
     '''Collect data into fixed-length chunks or blocks.'''
     # grouper('ABCCDEFG', 3, 'x') --> ABC DEF Gxx
     args = [iter(iterable)] * n
-    return izip_longest(fillvalue=fillvalue,*args)
-    
-def get_section(page_sz=10):
-    total = range(100)
-    for section in grouper(total,page_sz):
-        yield section
+    return izip_longest(fillvalue=fillvalue,*args)   
 
-def get_tag_data(tag_name,column_name='id',page_size=None):
-    _db.select('tags',where='name '+tag_name)
-    while False:
-        pass
-    
-def get_tag_ids(tag_name):
-    '''Returns a list of tag ids associated with 'tag_name'.'''
-    _db.select('tags',where='name='+tag_name)
+if __name__ == "__main__":
+    #print(search_tags('asfkljl3%44123-*3kl+lk_'))
+    print(search_tags('boobs or icecream'))

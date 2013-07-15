@@ -1,0 +1,10 @@
+{
+	"db":"bloom.db",
+    "tags_table":"tags",
+    "images_table":"images",
+    "join_table":"images_tags",
+    "join_table_id_col":"images_tags_id",
+    "images_id_col":"images_id",
+    "tags_id_col":"tags_id",
+    "tags_name_col":"name"
+}
