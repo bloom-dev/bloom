@@ -18,7 +18,16 @@ _config = Configuration.read("configs/settings.json")
 _db = web.database(dbn='sqlite',db='bloom.db')
 _render = web.template.render('templates/',base='wrapper')
 _render_naked = web.template.render('templates/')
-
+_naming = Configuration.read("configs/sql_naming.json")
+#_naming = {
+#    'tags_table':'tags',
+#    'images_table':'images',
+#    'join_table':'images_tags',
+#    'join_table_id_col':'images_tags_id',
+#    'images_id_col':'images_id',
+#    'tags_id_col':'tags_id',
+#    'tags_name_col':'name'
+#    }
 
 
 #============================
@@ -75,7 +84,11 @@ class images:
 
 class tags:
 	def GET(self):
-		tag_list = _db.query(' SELECT ImageTags.TagID, Tags.name, count(*) as count FROM ImageTags INNER JOIN tags ON ImageTags.tagID = Tags.ID GROUP BY Tags.ID')
+		sql_select = '''SELECT {join_table}.{tags_id_col}, {tags_table}.{tags_name_col}, count(*) as count
+		FROM {join_table} INNER JOIN tags ON ImageTags.tagID = Tags.ID GROUP BY Tags.ID'''.format(
+			**_naming.dict())
+		tag_list = _db.query(sql_select)
+		#tag_list = _db.query(' SELECT ImageTags.TagID, Tags.name, count(*) as count FROM ImageTags INNER JOIN tags ON ImageTags.tagID = Tags.ID GROUP BY Tags.ID')
 		#tag_list = _db.select('tags')
 		return _render.tags(tag_list)
 	
@@ -90,19 +103,30 @@ class upload:
 	def GET(self):
 		return _render.upload()
 	def POST(self):
-		filedir = 'static/archive' #directory to store the files in.
+		#directory to store the files in.
+		archive = _naming['images_archive'] 
+		#archive = 'static/archive' 
 		i = web.webapi.rawinput()
 		files = i.userimage
 		if not isinstance(files, list):
 			files = [files]
+			
 		for f in files:
-			filepath=f.filename.replace('\\','/')
-			filename=filepath.split('/')[-1] # splits the and chooses the last part (the filename with extension)
-			fout = open(filedir +'/'+ filename,'wb') # creates the file where the uploaded file should be stored
-			fout.write(f.file.read()) # writes the uploaded file to the newly created file.
-			fout.close() # closes the file, upload complete.
-			something = _db.insert('images',file_path=filename)
-			make_thumbnail(filename)
+			#[] This should call the import_records.py API here
+			old_path=f.filename.replace('\\','/')
+			
+			image_id = import_image(old_path)
+			
+			#FUTURE CODE: to add tags to this record:
+			#tag_ids = apply_tags(image_id,tags)
+			
+			#filename=old_path.split('/')[-1] # splits the and chooses the last part (the filename with extension)
+			#fout = open(archive +os.path.sep+ filename,'wb') # creates the file where the uploaded file should be stored
+			#fout.write(f.file.read()) # writes the uploaded file to the newly created file.
+			#fout.close() # closes the file, upload complete.
+			#something = _db.insert('images',file_path=filename)
+			#something = _db.insert('images',file_path=filename)
+			#make_thumbnail(old_path)
 		raise web.seeother('/images')
 
 class comingsoon:
@@ -118,8 +142,15 @@ def start():
 #============================
 #   Utility Functions
 #============================
+
+#@deprecated: This has been moved into the import_records.py API
 def make_thumbnail(filename):
-	os.system(r'convert static/archive/'+ filename +' -auto-orient -thumbnail 150x150 -unsharp 0x.5 static/archive/thumbnails/'+filename)
+	os.system(r'convert {archive}{file_name} -auto-orient -thumbnail 150x150 \
+		-unsharp 0x.5 {thumbnails}{filename}'.format(
+		archive=_config['image_archive'],
+		filename=filename,
+		thumbnails=_config['image_thumbnails']))	
+	#os.system(r'convert static/archive/'+ filename +' -auto-orient -thumbnail 150x150 -unsharp 0x.5 static/archive/thumbnails/'+filename)
 
 
 if __name__ == "__main__":

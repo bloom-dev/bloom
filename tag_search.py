@@ -80,8 +80,8 @@ def get_image_ids(tags):
                             tag_val=tag,**_naming.dict())
         #sql_select = ' SELECT ImageID FROM ImageTags INNER JOIN Tags ON ImageTags.tagID = Tags.ID WHERE Tags.name = \''+tag+'\' '
         tagdata = _db.query(sql_select)
-        
-        itags[tag] = set(t.ImageID for t in tagdata)
+        itags[tag] = set(t.__getitem__(_naming['images_id_col']) for t in tagdata)
+        #itags[tag] = set(t.ImageID for t in tagdata)
     return itags
 
 def render_image_ids(processed_ids):
@@ -89,7 +89,8 @@ def render_image_ids(processed_ids):
     for image_id in processed_ids:
         if len(wherestring) > 0:
             wherestring += ' OR '
-        wherestring += ('id = ' + str(image_id))
+        wherestring += (_naming['images_id_col']+" = "+str(image_id))
+        #wherestring += ('id = ' + str(image_id))
 
     if len(wherestring) == 0:
         wherestring="null"
@@ -348,4 +349,5 @@ def grouper(iterable, n, fillvalue=None):
 
 if __name__ == "__main__":
     #print(search_tags('asfkljl3%44123-*3kl+lk_'))
-    print(search_tags('boobs or icecream'))
+    result = search_tags('boobs or icecream')
+    print(list(result))
