@@ -15,6 +15,6 @@ $def with (images)
 
 <ul class = "images_listing">
 $for row in images:
-	<li><a href='/image/$row.images_id'><img src='/static/archive/thumbnails/$(row.current_path)'></a></li>
+	<li><a href='/image/$row.images_id'><img src='$(row.current_path)'></a></li>
 
 </ul>

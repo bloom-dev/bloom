@@ -75,7 +75,8 @@ def import_testing_db(cxn=None):
     _testing = Configuration.read('configs/test_data.json')
     
     for file_name,tags in _testing['images']:
-        path = _testing['in_dir']+os.path.sep+file_name
+        path = _testing['in_dir']+'/'+file_name
+        #path = _testing['in_dir']+os.path.sep+file_name
         if not os.path.exists(path):
             print("Image file not found at {0}, skipping.".format(path))
             continue
@@ -134,23 +135,12 @@ def import_tag(tag,cxn=None):
     '''Adds tag to db (it not already present), and returns it's tag_id.'''
     if cxn is None:
         cxn = SQLite(_config['bloom_db'])
-    #cxn = sql.connect(_config['bloom_db'])
-    #cursor = cxn.cursor()
     
     #[] Check if tag already exists
-    #sql_select = "SELECT name from tags\
-    #                WHERE name = '{0}';".format(tag)
-    #cursor.execute()
-    #if (cursor.fetchone()):
     if cxn.record_exists({'name':tag},_naming['tags_table']):
         print("Tag named '{0}' already exists".format(tag))
     else:
         #[] If not, add it
-        #cursor.execute("INSERT INTO tags (name)\
-        #                VALUES ({0});".format(tag))
-        #sql_insert = '''INSERT INTO tags (name)
-        #                 VALUES ({0});'''.format(tag)
-        #cxn.run(sql_insert)
         cxn.insert({'name':tag},_naming['tags_table'])
 
     #[] Return tag_id
@@ -168,7 +158,7 @@ def import_image(old_full_path,cxn=None):
     
     #[] Copy file to archive
     old_path, original_name = os.path.split(old_full_path)
-    current_path = _config['image_archive'] + os.path.sep+original_name
+    current_path = _config['image_archive'] + '/' + original_name
     
     #[] Calculate values for image record:
     #    hash, date_uploaded, original_name, current_path
@@ -176,11 +166,6 @@ def import_image(old_full_path,cxn=None):
     upload_date = unicode(datetime.datetime.now())
     
     #[] Confirm that hash is not already in the db
-#    sql_select_hash = "SELECT hash from images\
-#                        WHERE hash = '{0}';".format(hash)     
-#    cursor.execute(sql_select_hash)
-#    result = cursor.fetchone()
-#    if result:
     if cxn.record_exists({'hash':hash},_naming['images_table']):
         #@todo: Loging: This should really be a logging step
         print("Hash ({0}) for file named {1} already exists".format(hash,original_name))
@@ -189,7 +174,9 @@ def import_image(old_full_path,cxn=None):
         shutil.copyfile(old_full_path,current_path)
         
         #[] Make thumbnail
-        make_thumbnail(current_path)
+        #current_dir,file_name = os.path.sep(current_path)
+        #make_thumbnail(current_path)
+        thumbnail(current_path)
         
         #[] Create image record
         sql_insert = '''
@@ -217,13 +204,44 @@ def hash_file(file_path):
     sha1 = hashlib.sha1("blob "+str(filesize)+"\0"+str(data))
     return sha1.hexdigest()
 
-def make_thumbnail(filename):
-    os.system(r'convert {archive}{file_name} -auto-orient -thumbnail 150x150 \
-        -unsharp 0x.5 {thumbnails}{filename}'.format(
-        archive=_config['image_archive'],
-        filename=filename,
-        thumbnails=_config['image_thumbnails']))
+def make_thumbnail(current_path):
+    current_dir,file_name = os.path.split(current_path)
+    source = _config['image_archive']+file_name
+    destination = _config['image_thumbnails']+file_name
+    convert_cmd = '''convert {archive}{file_name} -auto-orient -thumbnail 150x150 \
+        -unsharp 0x.5 {thumbnails}{file_name}'''.format(
+            archive=_config['image_archive'].replace('/','\\'),
+            file_name=file_name,
+            thumbnails=_config['image_thumbnails'].replace('/','\\'))
+    os.system(convert_cmd)   
+    #os.system(r'convert {archive}{file_name} -auto-orient -thumbnail 150x150 \
+    #    -unsharp 0x.5 {thumbnails}{file_name}'.format(
+    #    archive=_config['image_archive'],
+    #    file_name=file_name,
+    #    thumbnails=_config['image_thumbnails']))
 
+
+def thumbnail(current_path):
+    from PIL import Image
+    current_dir,file_name = os.path.split(current_path)
+    source = _config['image_archive']+file_name
+    destination = _config['image_thumbnails']+file_name
+
+    size = 150, 150
+    im = Image.open(source)
+    im.thumbnail(size)
+    im.save(destination,"jpg")
+    
+    print(destination)
+#    for infile in sys.argv[1:]:
+#        outfile = os.path.splitext(infile)[0] + ".thumbnail"
+#        if infile != outfile:
+#            try:
+#                im = Image.open(infile)
+#                im.thumbnail(size)
+#                im.save(outfile, "JPEG")
+#            except IOError:
+#                print "cannot create thumbnail for", infile
 
 #------------------- Functions in Development
 def import_directory(dir_path,tags=None):
