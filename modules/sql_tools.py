@@ -18,6 +18,10 @@ class SQLite():
         '''Sugar for combining .execute(sql_command) and .get_results() for simplicity of writing.'''
         self._cursor.execute(sql_command)
         return self._cursor.fetchall()
+    def first(self,sql_command):
+        '''SQLite.run(), except returns only the first result.'''
+        self._cursor.execute(sql_command)
+        return self._cursor.fetchone()
     def commit(self):
         self._cxn.commit()
     def _db_spec(self):
@@ -50,8 +54,8 @@ class SQLite():
         column_names = [row[0] for row in rows]
         return column_names
     def table_exists(self,table_name):
-        self._cxn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='{0}';".format(table_name))
-        if (self._cursor.fetchone()):    #if non-empty
+        results = self.run("SELECT name FROM sqlite_master WHERE type='table' AND name='{0}';".format(table_name)) 
+        if (results):    #if non-empty
             return True
         else:
             return False
