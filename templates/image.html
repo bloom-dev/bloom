@@ -1,5 +1,14 @@
 $def with (image_data, tag_list)
 
+<script src="static/js/typeahead.min.js"></script>
+
+<form method="POST" enctype="multipart/form-data">
+<input type="text" name="tag" id='autotagadd'/>
+<input type="hidden" name="imagenum" value=$(image_data.id)>
+<br/>
+<input type="submit" />
+</form>
+
 <img src='/static/archive/$(image_data.current_path)'>
 <br>
 <br>

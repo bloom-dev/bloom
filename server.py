@@ -87,6 +87,21 @@ class image:
 		image_tags = _db.query('SELECT Images_ID,Tags_ID,Name FROM images_tags INNER JOIN tags ON images_tags.tags_ID = tags.ID WHERE images_ID = '+imageID)
 		for image_d in image_data:
 			return _render.image(image_d, image_tags)
+	def POST(self,imageID):
+		i = web.input();
+		tagc = _db.query('SELECT COUNT(*) as count FROM tags WHERE name = \"'+i.tag+'\"')
+
+		for tag in tagc:
+			if tag.count > 0:
+				_db.insert('tags',name='\"'+i.tag+'\"',display='yes')
+				break
+		tagnum = _db.query('SELECT id FROM tags WHERE id = \"'+i.tag+'\"')
+		for tagn in tagnum:
+			tagnum = tagn.id
+			break
+		_db.insert('images_tags', images_id=i.imagenum, tags_id=tagnum)
+		web.seeother('/image/'+i.imagenum)
+
 		
 class upload:
 	def GET(self):
