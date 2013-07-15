@@ -176,7 +176,7 @@ def import_image(old_full_path,cxn=None):
         #[] Make thumbnail
         #current_dir,file_name = os.path.sep(current_path)
         #make_thumbnail(current_path)
-        thumbnail(current_path)
+        #thumbnail(current_path)
         
         #[] Create image record
         sql_insert = '''
@@ -220,28 +220,6 @@ def make_thumbnail(current_path):
     #    file_name=file_name,
     #    thumbnails=_config['image_thumbnails']))
 
-
-def thumbnail(current_path):
-    from PIL import Image
-    current_dir,file_name = os.path.split(current_path)
-    source = _config['image_archive']+file_name
-    destination = _config['image_thumbnails']+file_name
-
-    size = 150, 150
-    im = Image.open(source)
-    im.thumbnail(size)
-    im.save(destination,"jpg")
-    
-    print(destination)
-#    for infile in sys.argv[1:]:
-#        outfile = os.path.splitext(infile)[0] + ".thumbnail"
-#        if infile != outfile:
-#            try:
-#                im = Image.open(infile)
-#                im.thumbnail(size)
-#                im.save(outfile, "JPEG")
-#            except IOError:
-#                print "cannot create thumbnail for", infile
 
 #------------------- Functions in Development
 def import_directory(dir_path,tags=None):

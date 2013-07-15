@@ -63,6 +63,7 @@ class search:
 				_render.images(result)
 			except Exception as exc:
 				#Search error page needs to go here.
+				print("Error during tag search process.")
 				raise
 			#return tag_search.sqlite_is_bad(tags_string)
 			#return tag_search.search_good_db(tags_string) #-do this is you're using postgre, MSSQL, or oracle
@@ -154,7 +155,11 @@ def make_thumbnail(filename):
 
 
 if __name__ == "__main__":
-	print(tag_search.search_tags('asfkljl3%44123-*3kl+lk_'))
-	print(tag_search.search_tags('boobs or icecream'))
-
-
+	#print(tag_search.search_tags('asfkljl3%44123-*3kl+lk_'))
+	#print(tag_search.search_tags('boobs or icecream'))
+	myRequest = search()
+	results = myRequest.GET('boobs')
+	#results = tag_search.search_tags('boobs')
+	print(list(results))
+	results = tag_search.search_tags('boobs and (dicks or dildos)')
+	print(results)
