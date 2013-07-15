@@ -75,8 +75,10 @@ class SQLite():
         where_clause = " AND ".join("{0} = '{1}'".format(column,value) for column,value in record.items())
         sql_select = '''SELECT * FROM {0} WHERE {1};'''.format(table,where_clause)
         
-        self._cursor.execute(sql_select)
-        if (self._cursor.fetchone()):
+        #self._cursor.execute(sql_select)
+        #if (self._cursor.fetchone()):
+        first = self.first(sql_select)
+        if (first):
             return True
         else:
             return False
@@ -93,6 +95,7 @@ class SQLite():
         record: a list of column names
         where: a dictionary defining records'''
         raise Exception("This function is unfinished")
+
         #[] Build WHERE clause
         #@todo: make this an abstracted, private-module function to construct where clauses
         if where == None:
@@ -104,8 +107,6 @@ class SQLite():
                 where_clause = ' '+where
         elif type(where) == dict:
             where_clause = " WHERE "+" AND ".join("{0} = '{1}'".format(column,value) for column,value in record.items())
-            
-        
         sql_select = '''{0} {1}{2};'''.format(
             select_columns,from_clause,where_clause)
 

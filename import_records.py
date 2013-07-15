@@ -69,9 +69,11 @@ def setup_default_tables(cxn=None,overwrite=True):
         cxn.execute(sql_create)
         
 
-def import_testing_db():
+def import_testing_db(cxn=None):
+    if cxn==None:
+        cxn = SQLite(_config['bloom_db'])
     _testing = Configuration.read('configs/test_data.json')
-    cxn = SQLite(_config['bloom_db'])
+    
     for file_name,tags in _testing['images']:
         path = _testing['in_dir']+os.path.sep+file_name
         if not os.path.exists(path):
@@ -81,31 +83,34 @@ def import_testing_db():
         image_id = import_image(path,cxn)
     
         #[] Import tags
-        #    be sure to add: 'all'
-        tag_ids = []
         tags.append('all')  #Add an 'all' tag - for searching purposes
-        for tag in tags:
-            tag_id = import_tag(tag,cxn)
-            #[] Get tag ids
-            tag_ids.append( tag_id )
-            #[] Create images_tags record
-            import_image_tag(image_id,tag_id,cxn)
+        tag_ids = apply_tags(image_id,tags,cxn)
+#        tag_ids = []
+#        tags.append('all')  #Add an 'all' tag - for searching purposes
+#        for tag in tags:
+#            tag_id = import_tag(tag,cxn)
+#            #[] Get tag ids
+#            tag_ids.append( tag_id )
+#            #[] Create images_tags record
+#            import_image_tag(image_id,tag_id,cxn)
         
     cxn.commit()
 
-def apply_tags(image_id,tags,cxn):
+def apply_tags(image_id,tags,cxn=None):
+    if cxn == None:
+        cxn = SQLite(_config['bloom_db'])
     #[] Import tags
     #    be sure to add: 'all'
     tag_ids = []
-    tags.append('all')  #Add an 'all' tag - for searching purposes
     for tag in tags:
         tag_id = import_tag(tag,cxn)
         #[] Get tag ids
         tag_ids.append( tag_id )
         #[] Create images_tags record
         import_image_tag(image_id,tag_id,cxn)
+    return tag_ids
 
-def import_image_tag(image_id,tag_id,cxn):
+def import_image_tag(image_id,tag_id,cxn=None):
     #[] Check if it already exists
 
     #@deprecated: This variable is no longer needed    
@@ -125,7 +130,7 @@ def import_image_tag(image_id,tag_id,cxn):
         
     
     
-def import_tag(tag,cxn):
+def import_tag(tag,cxn=None):
     '''Adds tag to db (it not already present), and returns it's tag_id.'''
     if cxn is None:
         cxn = SQLite(_config['bloom_db'])
@@ -153,10 +158,8 @@ def import_tag(tag,cxn):
                     WHERE {tags_name_col} = '{tag}';'''.format(
                         tag=tag,**_naming.dict())
     results = cxn.run(sql_select)
-    #results = cxn.run("id FROM tags WHERE name = '{0}';".format(tag))
-    #cursor.execute("SELECT id FROM tags WHERE name = '{0}';".format(tag))
-    #result = cursor.fetchone()
-    return results[0][0]
+    tag_id = results[0][0]
+    return tag_id
 
 def import_image(old_full_path,cxn=None):
     '''Adds image to db (if it doesn't exist), and returns it's image_id.'''
@@ -182,7 +185,11 @@ def import_image(old_full_path,cxn=None):
         #@todo: Loging: This should really be a logging step
         print("Hash ({0}) for file named {1} already exists".format(hash,original_name))
     else:
+        #[] Copy into archive
         shutil.copyfile(old_full_path,current_path)
+        
+        #[] Make thumbnail
+        make_thumbnail(current_path)
         
         #[] Create image record
         sql_insert = '''
@@ -199,9 +206,8 @@ def import_image(old_full_path,cxn=None):
                     WHERE hash = '{hash}';'''.format(
                         hash=hash,**_naming.dict())
     results = cxn.run(sql_select)
-    #cursor.execute(sql_select)
-    #results = cursor.fetchone()
-    return results[0][0]
+    image_id = results[0][0]
+    return image_id
 
 def hash_file(file_path):
     with open(file_path,'rb') as f:
@@ -210,6 +216,13 @@ def hash_file(file_path):
     #this is how git does it
     sha1 = hashlib.sha1("blob "+str(filesize)+"\0"+str(data))
     return sha1.hexdigest()
+
+def make_thumbnail(filename):
+    os.system(r'convert {archive}{file_name} -auto-orient -thumbnail 150x150 \
+        -unsharp 0x.5 {thumbnails}{filename}'.format(
+        archive=_config['image_archive'],
+        filename=filename,
+        thumbnails=_config['image_thumbnails']))
 
 
 #------------------- Functions in Development
@@ -232,9 +245,6 @@ if __name__ == "__main__":
     #Establish SQL connection and build DB
     #cxn = sql.connect(_config['bloom_db'])
     cxn = SQLite(_config['bloom_db'])
-    
-    
     setup_default_tables(cxn)
-
     import_testing_db()
 

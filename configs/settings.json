@@ -3,7 +3,8 @@
 	"port": "8000",
 	"repodir": "C:/brazen",
 	"sql_engine":"sqlite",
-	"image_archive": "images",
+	"image_archive": "static\\archive\\",
+	"image_thumbnails":"static\\archive\\thumbnails\\"
 	"bloom_db": "bloom.db",
 	"tables": {
 		"image": {
