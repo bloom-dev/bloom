@@ -9,7 +9,7 @@
 		"image": {
 			"name": "images",
 			"columns": [
-				["id","INTEGER","NOT NULL PRIMARY KEY"],
+				["images_id","INTEGER","NOT NULL PRIMARY KEY"],
 				["original_name","VARCHAR(255)",""],
 				["current_path","VARCHAR(255)",""],
 				["hash","VARCHAR(40)",""],
@@ -19,7 +19,7 @@
 		"tag": {
 			"name": "tags",
 			"columns": [
-				["id","INTEGER","NOT NULL PRIMARY KEY"],
+				["tags_id","INTEGER","NOT NULL PRIMARY KEY"],
 				["name","VARCHAR(255)","NOT NULL"],
 				["display","VARCHAR(255)",""]
 			]
