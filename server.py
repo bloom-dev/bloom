@@ -16,10 +16,11 @@ import datetime
 #---------- Parameters
 #setup for web.py
 _config = Configuration.read("configs/settings.json")
-_db = web.database(dbn='sqlite',db='bloom.db')
-_render = web.template.render('templates/',base='wrapper', globals={'_config':_config})
-_render_naked = web.template.render('templates/')
 _naming = Configuration.read("configs/sql_naming.json")
+_db = web.database(dbn='sqlite',db='bloom.db')
+_render = web.template.render('templates/',base='wrapper', globals={'_config':_config, '_naming':_naming})
+_render_naked = web.template.render('templates/', globals={'_config':_config, '_naming':_naming})
+
 #_naming = {
 #    'tags_table':'tags',
 #    'images_table':'images',
