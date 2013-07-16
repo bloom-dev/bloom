@@ -60,7 +60,7 @@ class search:
 		else:
 			try:
 				result = tag_search.search_tags(tags_string)
-				_render.images(result)
+				_render.images(list(result))
 			except Exception as exc:
 				#Search error page needs to go here.
 				print("Error during tag search process.")
@@ -157,9 +157,12 @@ def make_thumbnail(filename):
 if __name__ == "__main__":
 	#print(tag_search.search_tags('asfkljl3%44123-*3kl+lk_'))
 	#print(tag_search.search_tags('boobs or icecream'))
+	test_strings = ['boobs',
+					'boobs and tits',
+					'boobs and (dicks or dildos)']
+	
 	myRequest = search()
-	results = myRequest.GET('boobs')
-	#results = tag_search.search_tags('boobs')
-	print(list(results))
-	results = tag_search.search_tags('boobs and (dicks or dildos)')
-	print(results)
+	for searchstr in test_strings:
+		results = myRequest.GET(searchstr)
+		print(results)
+		print('------')
