@@ -10,13 +10,14 @@ import sqlite3 as sql		#can easily be replaced with other SQL
 sys.path.append('modules/') #Put the modules directory in the pythonpath
 from organizers import Configuration     #Used to read JSON/XML configuration files.
 import tag_search
+import datetime
 
 
 #---------- Parameters
 #setup for web.py
 _config = Configuration.read("configs/settings.json")
 _db = web.database(dbn='sqlite',db='bloom.db')
-_render = web.template.render('templates/',base='wrapper')
+_render = web.template.render('templates/',base='wrapper', globals={'_config':_config})
 _render_naked = web.template.render('templates/')
 _naming = Configuration.read("configs/sql_naming.json")
 #_naming = {
@@ -105,7 +106,7 @@ class upload:
 		return _render.upload()
 	def POST(self):
 		#directory to store the files in.
-		archive = _naming['images_archive'] 
+		archive = _config['image_archive'] 
 		#archive = 'static/archive' 
 		i = web.webapi.rawinput()
 		files = i.userimage
@@ -115,9 +116,16 @@ class upload:
 		for f in files:
 			#[] This should call the import_records.py API here
 			old_path=f.filename.replace('\\','/')
-			
-			image_id = import_image(old_path)
-			
+			up_file_name = old_path.split('/')[-1] # splits the and chooses the last part (the filename with extension)
+			up_file_path = _config['image_archive'] +'/'+ up_file_name
+			fout = open(up_file_path,'wb') # creates the file where the uploaded file should be stored
+			fout.write(f.file.read()) # writes the uploaded file to the newly created file.
+			fout.close() # closes the file, upload complete.
+
+			fupload_date = unicode(datetime.datetime.now())
+
+			something = _db.insert('images',original_name=up_file_name,current_path=up_file_path,hash='0',upload_date=fupload_date)
+			make_thumbnail(up_file_name)
 			#FUTURE CODE: to add tags to this record:
 			#tag_ids = apply_tags(image_id,tags)
 			
@@ -128,7 +136,7 @@ class upload:
 			#something = _db.insert('images',file_path=filename)
 			#something = _db.insert('images',file_path=filename)
 			#make_thumbnail(old_path)
-		raise web.seeother('/images')
+		raise web.seeother('/list')
 
 class comingsoon:
 	def GET(self):
@@ -144,14 +152,14 @@ def start():
 #   Utility Functions
 #============================
 
-#@deprecated: This has been moved into the import_records.py API
+# you may leave this as depricated if you like, but the function must be in this form
+# for it to work --Paarth
 def make_thumbnail(filename):
-	os.system(r'convert {archive}{file_name} -auto-orient -thumbnail 150x150 \
-		-unsharp 0x.5 {thumbnails}{filename}'.format(
-		archive=_config['image_archive'],
-		filename=filename,
-		thumbnails=_config['image_thumbnails']))	
-	#os.system(r'convert static/archive/'+ filename +' -auto-orient -thumbnail 150x150 -unsharp 0x.5 static/archive/thumbnails/'+filename)
+	os.system('convert \"{fullimage_path}\" -auto-orient -thumbnail 150x150 \
+		-unsharp 0x.5 \"{thumbnail_path}\"'.format(
+		fullimage_path=os.path.normpath(_config['image_archive'] + filename),
+		thumbnail_path=os.path.normpath(_config['image_thumbnails'] + filename)))
+		#os.path.normpath is necessary to perform OS-independent things.
 
 
 if __name__ == "__main__":

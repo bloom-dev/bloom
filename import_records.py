@@ -158,7 +158,7 @@ def import_image(old_full_path,cxn=None):
     
     #[] Copy file to archive
     old_path, original_name = os.path.split(old_full_path)
-    current_path = _config['image_archive'] + '/' + original_name
+    current_path = original_name
     
     #[] Calculate values for image record:
     #    hash, date_uploaded, original_name, current_path
