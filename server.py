@@ -62,11 +62,11 @@ class search:
 		else:
 			try:
 				result = tag_search.search_tags(tags_string)
+
 				_render.images(result)
 			except Exception as exc:
 				#Search error page needs to go here.
 				print("Error during tag search process.")
-				raise
 			#return tag_search.sqlite_is_bad(tags_string)
 			#return tag_search.search_good_db(tags_string) #-do this is you're using postgre, MSSQL, or oracle
 
@@ -88,7 +88,7 @@ class images:
 class tags:
 	def GET(self):
 		sql_select = '''SELECT {join_table}.{tags_id_col}, {tags_table}.{tags_name_col}, count(*) as count
-		FROM {join_table} INNER JOIN tags ON ImageTags.tagID = Tags.ID GROUP BY Tags.ID'''.format(
+		FROM {join_table} INNER JOIN tags ON {join_table}.{tags_id_col} = {tags_table}.{tags_id_col} GROUP BY {tags_table}.{tags_id_col}'''.format(
 			**_naming.dict())
 		tag_list = _db.query(sql_select)
 		#tag_list = _db.query(' SELECT ImageTags.TagID, Tags.name, count(*) as count FROM ImageTags INNER JOIN tags ON ImageTags.tagID = Tags.ID GROUP BY Tags.ID')
