@@ -97,8 +97,8 @@ class tags:
 	
 class image:
 	def GET(self,imageID):
-		image_data = _db.select('images',where='ID = '+imageID)
-		image_tags = _db.query('SELECT ImageID,TagID,Name FROM ImageTags INNER JOIN Tags ON ImageTags.tagID = Tags.ID WHERE ImageID = '+imageID)
+		image_data = _db.select('{images_table}'.format(**_naming.dict()),where='{images_id_col} = '.format(**_naming.dict())+imageID)
+		image_tags = _db.query('SELECT {images_id_col},{tags_table}.{tags_id_col},{tags_name_col} FROM {join_table} INNER JOIN {tags_table} ON {join_table}.{tags_id_col} = {tags_table}.{tags_id_col} WHERE {images_id_col} = '.format(**_naming.dict()) + imageID)
 		for image_d in image_data:
 			return _render.image(image_d, image_tags)
 		

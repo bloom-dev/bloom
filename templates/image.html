@@ -1,6 +1,6 @@
 $def with (image_data, tag_list)
 
-<img src='/static/archive/$(image_data.file_path)'>
+<img src="/$(_config['image_archive'])$(image_data.original_name)">
 <br>
 <br>
 <b>Tags:</b>
