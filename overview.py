@@ -1,3 +1,10 @@
+'''
+[] Ability to track what individual user has viewed
+[] Online version: meaningless points for creating tags (which are upvoted)
+[] Ability to track what has been viewed (so people will see new things)
+[] Image submission: hash collision -- present choice to submit/reject to user.
+'''
+
 
 #=== Build Notes:
 '''Build this in Python 3.

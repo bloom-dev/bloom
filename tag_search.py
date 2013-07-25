@@ -100,7 +100,6 @@ def render_image_ids(processed_ids):
 
 
 
-
 ##@deprecated: 
 #def search_sqlite(searchstr):
 #    #Used to be called: sqlite_is_bad()

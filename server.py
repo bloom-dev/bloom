@@ -153,8 +153,6 @@ def start():
 #   Utility Functions
 #============================
 
-# you may leave this as depricated if you like, but the function must be in this form
-# for it to work --Paarth
 def make_thumbnail(filename):
 	os.system('convert \"{fullimage_path}\" -auto-orient -thumbnail 150x150 \
 		-unsharp 0x.5 \"{thumbnail_path}\"'.format(

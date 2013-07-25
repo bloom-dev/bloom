@@ -27,15 +27,6 @@ _config = Configuration.read("configs/settings.json")
 #    'tags_name_col':'name'
 #    }
 _naming = Configuration.read("configs/sql_naming.json")
-
-#@deprecated: by new SQLite object
-#def table_exists(cxn,table_name):
-#    
-#    results = cxn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='{0}';".format(table_name))
-#    if (results.fetchall()):   #if non-empty
-#        return True
-#    else:
-#        return False
     
 def setup_default_tables(cxn=None,overwrite=True):
 #    if cxn is None:
@@ -86,15 +77,6 @@ def import_testing_db(cxn=None):
         #[] Import tags
         tags.append('all')  #Add an 'all' tag - for searching purposes
         tag_ids = apply_tags(image_id,tags,cxn)
-#        tag_ids = []
-#        tags.append('all')  #Add an 'all' tag - for searching purposes
-#        for tag in tags:
-#            tag_id = import_tag(tag,cxn)
-#            #[] Get tag ids
-#            tag_ids.append( tag_id )
-#            #[] Create images_tags record
-#            import_image_tag(image_id,tag_id,cxn)
-        
     cxn.commit()
 
 def apply_tags(image_id,tags,cxn=None):
@@ -152,7 +134,8 @@ def import_tag(tag,cxn=None):
     return tag_id
 
 def import_image(old_full_path,cxn=None):
-    '''Adds image to db (if it doesn't exist), and returns it's image_id.'''
+    '''Adds image to db (if it doesn't exist), and returns it's image_id.
+    Handles: '''
     if cxn is None:
         cxn = SQLite(_config['bloom_db'])
     
@@ -204,21 +187,12 @@ def hash_file(file_path):
     sha1 = hashlib.sha1("blob "+str(filesize)+"\0"+str(data))
     return sha1.hexdigest()
 
-def make_thumbnail(current_path):
-    current_dir,file_name = os.path.split(current_path)
-    source = _config['image_archive']+file_name
-    destination = _config['image_thumbnails']+file_name
-    convert_cmd = '''convert {archive}{file_name} -auto-orient -thumbnail 150x150 \
-        -unsharp 0x.5 {thumbnails}{file_name}'''.format(
-            archive=_config['image_archive'].replace('/','\\'),
-            file_name=file_name,
-            thumbnails=_config['image_thumbnails'].replace('/','\\'))
-    os.system(convert_cmd)   
-    #os.system(r'convert {archive}{file_name} -auto-orient -thumbnail 150x150 \
-    #    -unsharp 0x.5 {thumbnails}{file_name}'.format(
-    #    archive=_config['image_archive'],
-    #    file_name=file_name,
-    #    thumbnails=_config['image_thumbnails']))
+def make_thumbnail(filename):
+    os.system('convert \"{fullimage_path}\" -auto-orient -thumbnail 150x150 \
+        -unsharp 0x.5 \"{thumbnail_path}\"'.format(
+        fullimage_path=os.path.normpath(_config['image_archive'] + filename),
+        thumbnail_path=os.path.normpath(_config['image_thumbnails'] + filename)))
+   
 
 
 #------------------- Functions in Development
