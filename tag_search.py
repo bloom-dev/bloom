@@ -41,6 +41,9 @@ _naming = Configuration.read("configs/sql_naming.json")
 #Function Sequence: enters at sqlite_is_bad, or search_good_db
 
 def search_tags(tags_string):
+    if tags_string == "" or tags_string == []:
+        return []
+    
     if _config['sql_engine']=="sqlite":
         return search_sqlite(tags_string)
         #return search_sqlite(tags_string)

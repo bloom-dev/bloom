@@ -44,7 +44,7 @@ _urls = (
 	'/image/(.+)','image',
 	'/list/(.+)','search',
 	'/list(/)?', 'search',
-	'/slideshow/?','slideshow'
+	'/slideshow/(.*)','slideshow'
 )
 
 #============================
@@ -85,7 +85,16 @@ class search:
 
 
 class slideshow:
-    def GET(self,searchstr1="boobs",searchstr2="dick"):
+    def GET(self,urlstring="boobs/dick"):
+#    	parts = urlstring.split('/')
+#    	searchstr1 = parts[0]
+#    	if len(parts) > 1:
+#    		searchstr2 = parts[1]
+#    	else:
+#    		searchstr2 = "dick"
+    	searchstr1 = "boobs"
+    	searchstr2 = "dick"
+    	
     	files1 = [rec[_naming['images_path_col']] 
 						for rec in tag_search.search_tags(searchstr1)]
     	files2 = [rec[_naming['images_path_col']] 
@@ -196,7 +205,7 @@ if __name__ == "__main__":
 	print(html)
 	
 	slideRequest = slideshow()
-	html = slideRequest.GET()
+	html = slideRequest.GET('boobs/icecream')
 	print(html)
 
 	#results = tag_search.search_tags('boobs and (dicks or dildos)')

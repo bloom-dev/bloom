@@ -11,13 +11,19 @@ $def with (content)
 	
 	<script type="text/javascript" src="/static/js/jquery-2.0.3.js"></script>
 	<script type="text/javascript" src="/static/js/bootstrap.js"></script>
+	<!-- meta.js is a custom-library compensating for JS's shortcomings. -->
+	<script type="text/javascript" src="/static/js/meta.js"></script>
 	<style>
+	/* Note to Paarth: I tried to get your original navbar coloration
+		but it isn't playing well with bootstrap.js - yet.
+		*/
+	/*
 		html {
 		    position: relative;
 		    min-height: 100%;
 		}
 		body {
-		    margin: 0 0 50px; /* bottom = footer height */
+		    margin: 0 0 50px; 
 		    background-color: #eee;
 		}
 		footer {
@@ -55,23 +61,105 @@ $def with (content)
 		footer p{
 			padding:15px;
 		}
+		*/
+		ul.nav li.current a{ border-bottom: 2px solid #427fed; }
+		ul.nav li:hover:not(.current) a {border-bottom: 2px solid rgba(66, 127, 237, 0.5); }
+		
+		
+		 /* Sticky footer styles
+      -------------------------------------------------- */
+
+      html,
+      body {
+        height: 100%;
+        /* The html and body elements cannot have any padding or margin. */
+      }
+
+      /* Wrapper for page content to push down footer */
+      #wrap {
+        min-height: 100%;
+        height: auto !important;
+        height: 100%;
+        /* Negative indent footer by it's height */
+        margin: 0 auto -60px;
+      }
+
+      /* Set the fixed height of the footer here */
+      #push,
+      #footer {
+        height: 60px;
+      }
+      #footer {
+        background-color: #f5f5f5;
+      }
+
+      /* Lastly, apply responsive CSS fixes as necessary */
+      @media (max-width: 767px) {
+        #footer {
+          margin-left: -20px;
+          margin-right: -20px;
+          padding-left: 20px;
+          padding-right: 20px;
+        }
+      }
+		
+		
 	</style>
+	<script>
+		jQuery(document).ready(function(){
+			mark_navbar_active();
+		});
+		function redirect_tag_search() {
+			//%20
+		}
+		function mark_navbar_active() {
+			//================================ 
+			//Mark Active Element of Navbar
+			//================================
+			var path_name = window.location.pathname;
+			
+			var matching = jQuery('#topbar ul.nav li').filter(function(index){
+				var href = jQuery(this).find('a').attr('href');	//The target of the link in this <li>
+				if (_in(path_name)(href)) {	//_in() is from meta.js
+					return true;
+				}
+			});
+			//Activate only the last nav link which matches the criteria
+			//... the last, because the first link to 'Home' is the simple '/'
+			matching.last().addClass('current');	
+		}
+	</script>
 </head>
 <body>
-	<div class="header">
-		<h2>Bloom</h2>
-		<ul class='bloomnav'>
-			<li><a href="/">Home</a></li>
-			<li><a href="/list">Images</a></li>
-			<li><a href="/tags">Tags</a></li>
-			<li><a href="/collections">Collections</a></li>
-			<li><a href="/slideshow">Slideshow</a></li>
-			<li><a href="/upload">Upload</a></li>
-		</ul>
-	</div>
-	<div class='page'>
-		$:content
-	</div>
+	<div id="wrap">
+
+
+		<div id="topbar" class="navbar">
+			<div class="navbar-inner">
+				<a class="brand" href="/">Bloom</a>
+				<ul class="nav">
+					<li><a href="/">Home</a></li>
+					<li><a href="/list">Images</a></li>
+					<li><a href="/tags">Tags</a></li>
+					<li><a href="/collections">Collections</a></li>
+					<li><a href="/slideshow/">Slideshow</a></li>
+					<li><a href="/upload">Upload</a></li>
+				</ul>
+				<form class="navbar-search pull-left">
+					<input type="text" class="search-query span2" value="I don't work yet">
+					<button type="submit" class="btn btn-info">Search Tags</button>
+				</form>
+			</div>
+		</div><!--/topbar-->
+		
+		<div class='page container'>
+			$:content
+		</div>
+
+		<div id="push"></div>
+    </div>
+	
+	<hr>
 	<footer>
 		<p>
 			Bloom 2013
