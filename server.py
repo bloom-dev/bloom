@@ -58,15 +58,24 @@ class search:
 	def GET(self,tags_string=''):
 		if tags_string == '' or tags_string == None or tags_string == '/':
 			result = _db.select('images')
-			return _render.images(result)
+			html = _render.images(result)
+			
+			return str(html)
 		else:
 			try:
+				web.header('Content-Type','text/html;charset=utf-8')
 				result = tag_search.search_tags(tags_string)
-
-				_render.images(result)
+				html = _render.images(result)
+				
+				return str(html)
 			except Exception as exc:
 				#Search error page needs to go here.
-				print("Error during tag search process.")
+				error_message = "Error during tag search process."+str(exc)
+				print(error_message)
+				raise exc
+				#Use the following line once an error page is created.
+				#return _render.error(error_message)
+				
 			#return tag_search.sqlite_is_bad(tags_string)
 			#return tag_search.search_good_db(tags_string) #-do this is you're using postgre, MSSQL, or oracle
 
@@ -74,6 +83,18 @@ class search:
 		x = web.input(searchstr='')
 		web.seeother('/list/'+x.searchstr.replace(' ','_'))
 
+
+class thumbnail:
+	def GET(self,thumbnail_file):
+		 cType = {
+            "png":"images/png",
+            "jpg":"images/jpeg",
+            "gif":"images/gif",
+            "ico":"images/x-icon"
+				  }
+		 _,ext = os.path.splitext(thumbnail_file)
+		 web.header("Content-Type", cType[ext]) # Set the Header
+		 return open(_config['image_thumbnails']+os.path.sep+thumbnail_file,"rb").read()
 
 class index:
 	def GET(self):
@@ -165,8 +186,15 @@ if __name__ == "__main__":
 	#print(tag_search.search_tags('asfkljl3%44123-*3kl+lk_'))
 	#print(tag_search.search_tags('boobs or icecream'))
 	myRequest = search()
-	results = myRequest.GET('boobs')
-	#results = tag_search.search_tags('boobs')
-	print(list(results))
-	results = tag_search.search_tags('boobs and (dicks or dildos)')
-	print(results)
+	
+	html = myRequest.GET('list/')
+	print(html)
+	
+	html = myRequest.GET('')
+	print(html)
+	
+	html = myRequest.GET('boobs')
+	print(html)
+
+	#results = tag_search.search_tags('boobs and (dicks or dildos)')
+	#print(results)

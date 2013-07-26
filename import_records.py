@@ -157,8 +157,9 @@ def import_image(old_full_path,cxn=None):
         shutil.copyfile(old_full_path,current_path)
         
         #[] Make thumbnail
-        #current_dir,file_name = os.path.sep(current_path)
+        current_dir,file_name = os.path.split(current_path)
         #make_thumbnail(current_path)
+        make_thumbnail(original_name)
         #thumbnail(current_path)
         
         #[] Create image record
@@ -180,6 +181,7 @@ def import_image(old_full_path,cxn=None):
     return image_id
 
 def hash_file(file_path):
+    '''Creates a SHA1 hash for file_path.'''
     with open(file_path,'rb') as f:
         data = f.read()
     filesize = os.path.getsize(file_path)
@@ -188,11 +190,15 @@ def hash_file(file_path):
     return sha1.hexdigest()
 
 def make_thumbnail(filename):
-    os.system('convert \"{fullimage_path}\" -auto-orient -thumbnail 150x150 \
+    '''Creates a thumbnail, and places it into _config['image_thumbnails'].
+    Assumes that 'filename' is already located in _config['image_archive'].'''
+    cmd = 'convert \"{fullimage_path}\" -auto-orient -thumbnail 150x150 \
         -unsharp 0x.5 \"{thumbnail_path}\"'.format(
         fullimage_path=os.path.normpath(_config['image_archive'] + filename),
-        thumbnail_path=os.path.normpath(_config['image_thumbnails'] + filename)))
-   
+        thumbnail_path=os.path.normpath(_config['image_thumbnails'] + filename))
+    #os.path.normpath is necessary to perform OS-independent things.
+    os.system(cmd)
+        
 
 
 #------------------- Functions in Development
@@ -208,6 +214,9 @@ def add_tags_to_files(file_list,tags=None):
     '''For each file in file_list, ensures it is imported,
     then applies all of 'tags'.'''
     pass
+
+
+
 
 if __name__ == "__main__":
     #_params = Configuration(in_dir= "raw images"+os.path.sep)    #~local configuration variables
