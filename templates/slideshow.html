@@ -1,0 +1,52 @@
+$def with (files1,files2)
+
+		<div class="row-fluid">
+			<div class="span6 well">
+				<div id="carousel-1" class="carousel slide">
+					<div class="carousel-inner">
+					
+						$for f in files1:
+							<div class="item">
+								<img src="$f">
+							</div>
+					</div>
+					<a class="left carousel-control" href="#carousel-1" data-slide="prev">&lsaquo;</a> 
+					<a class="right carousel-control" href="#carousel-1" data-slide="next">&rsaquo;</a>
+				</div>
+			</div>
+			
+			
+			<div class="span6 well">
+				<div id="carousel-2" class="carousel slide">
+					<div class="carousel-inner">
+					
+						$for f in files2:
+							<div class="item">
+								<img src="$f">
+							</div>
+						<!-- 
+						<div class="item active">
+							<img src="collections/beauty/flower tunnel japan.jpg" alt="">
+						</div>
+						<div class="item">
+							<img src="collections/beauty/naico mine.jpg" alt="">
+						</div>
+						<div class="item">
+							<img src="collections/beauty/netherlands tulip fields.jpg" alt="">
+						</div>
+						 -->
+					</div>
+					<a class="left carousel-control" href="#carousel-2" data-slide="prev">&lsaquo;</a> 
+					<a class="right carousel-control" href="#carousel-2" data-slide="next">&rsaquo;</a>
+				</div>
+			</div>
+		</div>
+		
+		<script type="text/javascript">
+			jQuery(document).ready(function() {
+				jQuery('.carousel-inner .item:first-of-type').addClass('active');
+				jQuery('.carousel').carousel({
+			   		  interval: 6000
+			   	});
+			});
+		</script>

@@ -28,7 +28,8 @@ _render_naked = web.template.render('templates/', globals={'_config':_config, '_
 #    'join_table_id_col':'images_tags_id',
 #    'images_id_col':'images_id',
 #    'tags_id_col':'tags_id',
-#    'tags_name_col':'name'
+#    'tags_name_col':'name',
+#	 'images_path_col':'current_path'
 #    }
 
 
@@ -42,7 +43,8 @@ _urls = (
 	'/upload','upload',
 	'/image/(.+)','image',
 	'/list/(.+)','search',
-	'/list(/)?', 'search'
+	'/list(/)?', 'search',
+	'/slideshow/?','slideshow'
 )
 
 #============================
@@ -59,15 +61,13 @@ class search:
 		if tags_string == '' or tags_string == None or tags_string == '/':
 			result = _db.select('images')
 			html = _render.images(result)
-			
-			return str(html)
+			return str(html)	#str() can probably be removed
 		else:
 			try:
-				web.header('Content-Type','text/html;charset=utf-8')
+				#web.header('Content-Type','text/html;charset=utf-8')
 				result = tag_search.search_tags(tags_string)
 				html = _render.images(result)
-				
-				return str(html)
+				return str(html)	#str() can probably be removed
 			except Exception as exc:
 				#Search error page needs to go here.
 				error_message = "Error during tag search process."+str(exc)
@@ -84,17 +84,16 @@ class search:
 		web.seeother('/list/'+x.searchstr.replace(' ','_'))
 
 
-class thumbnail:
-	def GET(self,thumbnail_file):
-		 cType = {
-            "png":"images/png",
-            "jpg":"images/jpeg",
-            "gif":"images/gif",
-            "ico":"images/x-icon"
-				  }
-		 _,ext = os.path.splitext(thumbnail_file)
-		 web.header("Content-Type", cType[ext]) # Set the Header
-		 return open(_config['image_thumbnails']+os.path.sep+thumbnail_file,"rb").read()
+class slideshow:
+    def GET(self,searchstr1="boobs",searchstr2="dick"):
+    	files1 = [rec[_naming['images_path_col']] 
+						for rec in tag_search.search_tags(searchstr1)]
+    	files2 = [rec[_naming['images_path_col']] 
+						for rec in tag_search.search_tags(searchstr2)]
+    	#images1 = tag_search.search_tags(searchstr1)
+    	#images2 = tag_search.search_tags(searchstr2)
+        return _render.slideshow(files1,files2)
+
 
 class index:
 	def GET(self):
@@ -187,13 +186,17 @@ if __name__ == "__main__":
 	#print(tag_search.search_tags('boobs or icecream'))
 	myRequest = search()
 	
-	html = myRequest.GET('list/')
+	html = myRequest.GET('list')
 	print(html)
 	
 	html = myRequest.GET('')
 	print(html)
 	
 	html = myRequest.GET('boobs')
+	print(html)
+	
+	slideRequest = slideshow()
+	html = slideRequest.GET()
 	print(html)
 
 	#results = tag_search.search_tags('boobs and (dicks or dildos)')
