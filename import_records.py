@@ -191,7 +191,8 @@ def hash_file(file_path):
 
 def make_thumbnail(filename):
     '''Creates a thumbnail, and places it into _config['image_thumbnails'].
-    Assumes that 'filename' is already located in _config['image_archive'].'''
+    Assumes that 'filename' is already located in _config['image_archive'].
+    Requires ImageMagick.'''
     cmd = 'convert \"{fullimage_path}\" -auto-orient -thumbnail 150x150 \
         -unsharp 0x.5 \"{thumbnail_path}\"'.format(
         fullimage_path=os.path.normpath(_config['image_archive'] + filename),

@@ -5,9 +5,11 @@ $def with (images)
 	float:left;
 	padding:10px;
 }
-.macro { border:1pt solid grey; }
-.thumbnail { 	min-height:200px; }
+.macro { border:2pt solid grey; }
+.thumbnail { 	min-height:220px; }
+.thumbnail-wrapper { min-height:150px; }
 .thumbnail-image-link { text-decoration:none; }
+.thumbnail-image { border:2pt solid rgba(120,120,120,0.25);}
 .locked { border:2pt solid red; }
 </style>
 
@@ -70,10 +72,18 @@ function set_macro_image(link_jq_ref) {
 	</div><!--/ -->
 	<div class="span9">
 		<div class="row">
+		<!-- Original:	-->
 			<form method="POST" enctype="multipart/form-data" action="/list">
 				<input type="text" name="searchstr" />
-				<input type="submit" />
+				<input type="submit"/>
 			</form>
+		 
+		 <!-- New: Trying to fix encoding, so spaces ==> %20
+		 	<form method="POST" action="/list">
+				<input type="text" name="searchstr" />
+				<input type="submit" onsubmit="urlencode()"/>
+			</form>
+		 -->
 		</div><!--/row-->
 		
 		<div class="row">
@@ -86,17 +96,17 @@ function set_macro_image(link_jq_ref) {
 					$ thumbnail_file = "/"+_config['image_thumbnails'] + row.original_name
 					<li class="span2">
 						<div class="thumbnail">
-							<a href='/image/$(row.images_id)' class="thumbnail-image-link" data-content="$(image_file)">
-								<!-- <img src="/$(_config['image_thumbnails'])$(row.original_name)">  -->
-								<img src="$(thumbnail_file)" class="thumbnail-image">
-							</a>
+							<div class="thumbnail-wrapper">
+								<a href='/image/$(row.images_id)' class="thumbnail-image-link" data-content="$(image_file)">
+									<!-- <img src="/$(_config['image_thumbnails'])$(row.original_name)">  -->
+									<img src="$(thumbnail_file)" class="thumbnail-image">
+								</a>
+							</div>
 							<div class="caption">
-								<p>
-									<div class="btn-group">
-										<button class="btn btn-info">Detail</button>
-										<a class="btn btn-warning" href='/image/$(row.images_id)'>Open</a>
-									</div>
-								</p>
+								<div class="btn-group">
+									<button class="btn btn-info">Save</button>
+									<a class="btn btn-warning" href='/image/$(row.images_id)'>View</a>
+								</div>
 							</div>
 						</div><!--/thumbnail -->
 					</li>

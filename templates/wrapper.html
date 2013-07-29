@@ -12,7 +12,8 @@ $def with (content)
 	<script type="text/javascript" src="/static/js/jquery-2.0.3.js"></script>
 	<script type="text/javascript" src="/static/js/bootstrap.js"></script>
 	<!-- meta.js is a custom-library compensating for JS's shortcomings. -->
-	<script type="text/javascript" src="/static/js/meta.js"></script>
+	<script type="text/javascript" src="/static/js/meta.js"></script>	
+	
 	<style>
 	/* Note to Paarth: I tried to get your original navbar coloration
 		but it isn't playing well with bootstrap.js - yet.
@@ -106,16 +107,30 @@ $def with (content)
 		
 	</style>
 	<script>
+		window.DEBUG = true;	//Enables _debug() function. 
+		
 		jQuery(document).ready(function(){
+			//Mark active element of navbar.
 			mark_navbar_active();
-			jQuery('#navbar-search-submit').click(function(event){
+			
+			//Trigger search in navbar.
+			jQuery('#navbar-tag-search-submit').click(function(event){
 				event.preventDefault();
-				var searchstr = jQuery(this).parent().find('input[type=text]').val();
-				
+				var jq_search_textbox = jQuery(this).parent().find('input[type=text]');
+				redirect_tag_search(jq_search_textbox);
 			});
 		});
-		function redirect_tag_search() {
-			
+		//============================== 
+		//Run search using navbar
+		//============================== 
+		function redirect_tag_search(jq_search_textbox) {
+			//jq_search_textbox - jQuery object for input textbox containing raw searchstring
+			var searchstr = jq_search_textbox.val();
+			var encoded_searchstr = encodeURI(searchstr);
+			var search_url = "/list/{0}".format(encoded_searchstr);
+			_debug("Raw searchstr: ",searchstr,"Encoded searchstr: ",encoded_searchstr," Search URL: ",search_url);
+			//Redirect url to search page 
+			document.location.assign( search_url );
 		}
 		function mark_navbar_active() {
 			//================================ 
@@ -150,10 +165,15 @@ $def with (content)
 					<li><a href="/slideshow/">Slideshow</a></li>
 					<li><a href="/upload">Upload</a></li>
 				</ul>
+				<!-- Original Search Form: Written in HTML -->
 				<form class="navbar-search pull-left" method="POST" enctype="multipart/form-data" action="/list">
 					<input type="text" class="search-query span2" name="searchstr" value="">
 					<button id="navbar-tag-search-submit" type="submit" class="btn btn-info">Search Tags</button>
 				</form>	
+				 
+				<!-- New Search Form: Written in Web.py's Python 
+				 dollar-sign-goes-here:navbar_form.render()
+				-->
 			</div>
 		</div><!--/topbar-->
 		

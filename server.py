@@ -21,6 +21,16 @@ _db = web.database(dbn='sqlite',db='bloom.db')
 _render = web.template.render('templates/',base='wrapper', globals={'_config':_config, '_naming':_naming})
 _render_naked = web.template.render('templates/', globals={'_config':_config, '_naming':_naming})
 
+#====== Example Web.Py Form:
+#I tried this, and didn't like it. It was ugly and overkill for simple forms.
+#navbar_form = web.form.Form(
+#	web.form.Textbox("search_box",description="Enter your search string, tags and function (and/or/not) seperated by spaces."),
+#	web.form.Button("submit", type="submit", description="Search"),
+#)
+#_render = web.template.render('templates/',base='wrapper', globals={'_config':_config, '_naming':_naming,'navbar_form':navbar_form})
+#Then in wrapper.html:   $:navbar_form.render()
+
+
 #_naming = {
 #    'tags_table':'tags',
 #    'images_table':'images',
