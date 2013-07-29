@@ -95,6 +95,22 @@ function _required() {
 		return true;
 	}
 }
+function _enumerated(in_array) {
+	return (function _enum_func(elm) {
+		var result = false;
+		jQuery.each(in_array,function(ind,val){
+			if (elm == val) {
+				result = true;
+				return false;	//return `false` for the .each() function
+			}
+		});
+		if (result == false) {
+			_complain("Input argument not a valid member of [{0}]".format(in_array));
+		} else {
+			return result;
+		}
+	});
+}
 function _extract() {
 	/**
 	 * Utility function. Returns arguments as an array. 
@@ -273,7 +289,6 @@ function _is(category,options) {
 	category = _default(category,"");
 	options = _default(options);
 	var category_to_function = {
-		"defined":function _defined(obj) 		{ return (typeof obj !== "undefined") ? true : false; },
 		"undefined":function _undefined(obj) 	{ return (typeof obj === "undefined") ? true : false; },
 		"enumerated":function _enumerated(obj) 	{ return contains(options,obj); },	//options~enumerated possibilities
 		"string":function _string(obj)			{ return (typeof(obj)==="string"); },
@@ -282,7 +297,11 @@ function _is(category,options) {
 		"object":function _object(obj)			{ return (typeof(obj)==="object"); },
 		"function":function _function(obj) 		{ return (typeof(obj)==="function");},
 		"boolean":function _boolean(obj)		{ return (typeof(obj)==="boolean");},
-		"empty":function _empty(obj)			{ return ((obj.length==0) || (jQuery.isEmptyObject(obj))); }
+		"empty":function _empty(obj)			{ return ((obj.length==0) || (jQuery.isEmptyObject(obj))); },
+		"jquery":function _jquery(obj)			{ return (obj instanceof jQuery);},
+		//----------- Non-Categories: various utility. Inversion, print categories
+		"not":function _not(category)	 		{ return (typeof obj !== "undefined") ? true : false; },
+		"":function _print_categories()			{ return _is.categories; }
 	};
 	/*//New, unfinished contents & ideas:
 		"empty":function _empty				//null,[],{},""
@@ -292,11 +311,6 @@ function _is(category,options) {
 		"int":
 		"url":
 	*/
-	
-	//If no category provided
-	if (category == "") {
-		return _is.categories;
-	}
 	
 	var func = category_to_function[ category.toLowerCase() ];
 	//func.name = category;
@@ -341,8 +355,37 @@ _assert.categories = _is.categories;		//Valid categories - _check() directly cal
  * 
  * ============================================
  */
+function _container_types(container,type) {
+	/**
+	 * Utility-function, used in container-based meta.js functions.
+	 * If 'type' is supplied, checks it against list of valid container types.
+	 * Else, extracts the type from 'container, using the _is() function.
+	 * 
+	 * Order of priority when determining 'type' of container:
+	 * 		string, jquery, array, object
+	 */
+	var type = _default(type);
+	
+	if (type == null) {	//Look for type of 'container'
+		if (_is('string')(container)) {
+			return 'string';
+		} else if (_is('jquery')(container)) {
+			return 'jquery';
+		} else if (_is('array')(container)) {
+			return 'array';
+		} else if (_is('object')(container)) {
+			return 'object';
+		} else {
+			_cry("_in() does not know how to operate on this container. It should be a string, jQuery object, array, or object: ",container);
+		}
+	} else if (_enumerated(['string','jquery','array','object'])(type.toLowerCase()) ){
+		return type.toLowerCase();
+	} else {
+		_cry("Invalid container type.");
+	}
+}
 
-function _find(container)	{
+function _find(container,type)	{
 	/**
 	 * Finds key/index of elements in a container. Container can be array, object, or string.
 	 * Related to _in(container). As with many meta.js functions, this actuall returns a function.
@@ -355,12 +398,63 @@ function _find(container)	{
 	//if key is a number or string, and not null or undefined.
 	//	return true
 	//else return false
+	
+	type = _container_types(container,type);
+	
+	var type_to_function = {
+		'string':function _find_substring(elm){
+				var accumulator = [];
+				for (var i = 0; i < container.length; i++) {
+					if (container.slice(i,i+elm.length) === elm) { accumulator.push(i); }
+				}
+				return accumulator;
+			},
+		'jquery':function _find_in_jquery_array(elm){
+				var accumulator = [];
+				container.each(function(index) {
+					if ($(this).is(elm)) {
+						accumulator.push( index );
+					}
+				});
+				return accumulator;
+			},
+		'array':function _find_array_elm(elm){
+				var accumulator = [];
+				for (var i = 0; i < container.length; i++) {				
+					if (container[i] === elm) { accumulator.push(i); }
+				}
+				return accumulator;
+			},
+		'object':function _find_object_prop_val(elm){
+				var accumulator = [];
+				jQuery.each(container,function(key,value){
+					if (value==elm) {	accumulator.push(key);		}
+				});
+				return accumulator;
+			}
+	};
+	
+	func = type_to_function[type];
+	return func;
+	
+	/*
 	if (_is('string')(container)) {
 		return (function _find_substring(elm){
 			var accumulator = [];
 			for (var i = 0; i < container.length; i++) {
 				if (container.slice(i,i+elm.length) === elm) { accumulator.push(i); }
 			}
+			return accumulator;
+		});
+	}
+	else if (_is('jquery')(container)) {
+		return (function _find_in_jquery_array(elm){
+			var accumulator = [];
+			container.each(function(index) {
+				if ($(this).is(elm)) {
+					accumulator.push( $(this) );
+				}
+			});
 			return accumulator;
 		});
 	}
@@ -384,59 +478,90 @@ function _find(container)	{
 	} else {
 		_cry("I don't know what to do with container. It should be a string, array, or object: ",container);
 	}
+	*/
 }
 _find.categories = ['string','array','object'];
 
-function _in(container)	{
+function _in(container,type)	{
 	/**
 	 * 
 	 *  Related to _find(container), except returns boolean.
 	 *  ~__contains__(self,other) in Python - or 'elm in container'
+	 *  
 	 *  
 	 *  If 'container' is an Object:	_in(obj)(value)	Looks for VALUE in an object, not a KEY (~property name)
 	 *  If 'container' is an Array:		_in(array)(string)	Checks if ENTIRE string == some element of array
 	 *  	Thus _in(['ab'])('a')		returns false
 	 *  If 'container' is a String: 	_in(string)(substring) Looks for SUBSTRING, in STRING. (not regex)
 	 */
+	//Order of priority for containment types:
+	//string, jquery, array, object
+	type = _container_types(container,type);
+
+	var func = function _find_in_container(elm) {
+		var result = _find(container,type)(elm);
+		if (_is('empty')(result)) {
+			return false;
+		} else {
+			return true;
+		}
+	};
+	return func
+
 	/*
-	if (_is('string')(container)) {
-		var func = (function _in_string(elm) {
-			var result = _find(container)(elm);
-			if (_is('empty')(result)) {
-				return false;
-			} else {
-				return true;
+	var type_to_function = {
+		"string":function _in_string(elm) {
+				var result = _find(container)(elm);
+				if (_is('empty')(result)) {
+					return false;
+				} else {
+					return true;
+				}
+			},
+		"jquery":function _in_jquery_array(elm) {
+				var result = [];
+				container.each(function(index) {
+					if ($(this).is(elm)) {
+						result = $(this);
+					}
+				});
+				if (_is('empty')(result)) {
+					return false;
+				} else {
+					return true;
+				}
+			},
+		"array":function _in_array(elm) {
+				var result = _find(container)(elm);
+				if (_is('empty')(result)) {
+					return false;
+				} else {
+					return true;
+				}
+			},
+		"object":function() {
+			
 			}
-		});
-	} else if (_is('array')(container)) {
-		var func = (function _in_array(elm) {
-			var result = _find(container)(elm);
-			if (_is('empty')(result)) {
-				return false;
-			} else {
-				return true;
-			}
-		});
-	} else if (_is('object')(container)) {
-		var func = (function _in_object(elm) {
-			var result = _find(container)(elm);
-			if (_is('empty')(result)) {
-				return false;
-			} else {
-				return true;
-			}
-		});
-	} else {
-		_cry("I don't know what to do with container. It should be a string, array, or object: ",container);
-	}
+	};
 	
-	//func.name = "_in_string";
-	return func;
-	*/
 	
 	if (_is('string')(container)) {
 		return (function _in_string(elm) {
 			var result = _find(container)(elm);
+			if (_is('empty')(result)) {
+				return false;
+			} else {
+				return true;
+			}
+		});
+	} else if (_is('jquery')(container)) {
+		return (function _in_jquery_array(elm) {
+			var result = [];
+			container.each(function(index) {
+				if ($(this).is(elm)) {
+					result = $(this);
+				}
+			});
 			if (_is('empty')(result)) {
 				return false;
 			} else {
@@ -464,6 +589,7 @@ function _in(container)	{
 	} else {
 		_cry("I don't know what to do with container. It should be a string, array, or object: ",container);
 	}
+	*/
 	_cry("You should never see this error.");
 }
 _in.categories = _find.categories;			//Since _in() directly calls _find()

@@ -5,16 +5,102 @@ $def with (images)
 	float:left;
 	padding:10px;
 }
+.macro { border:1pt solid grey; }
+.thumbnail { 	min-height:200px; }
+.thumbnail-image-link { text-decoration:none; }
+.locked { border:2pt solid red; }
 </style>
 
+<script>
 
+jQuery(document).ready(function(){
+	window.locked = [];
+	
+	//[] Show larger macro image, when hovering over thumbnail.
+	//  Image 'Lock' overrides hover behavior 
+	jQuery(".thumbnail-image-link").hover(function(){
+		if (_is('empty')(window.locked)) {
+			set_macro_image(jQuery(this));
+		}
+	});
 
-<form method="POST" enctype="multipart/form-data" action="/list">
-<input type="text" name="searchstr" />
-<input type="submit" />
-</form>
+	//[] Apply 'Lock' on click
+	//... this overrides thumbnail-hover
+	jQuery(".thumbnail-image-link").click(function(event){
+		event.preventDefault();
+		var self = {jq_ref:jQuery(this),
+					href:jQuery(this).attr('href'),
+					img:jQuery(this).find('img'),
+					state:jQuery(this).find('img').hasClass('locked'),
+					};
+		
+		var locked_images = jQuery('.thumbnail-image.locked');
+		locked_images.toggleClass('locked');
+		
+		if (self.state == false) {
+			self.img.addClass('locked');
+			set_macro_image(self.jq_ref);
+		}
+		window.locked = jQuery('.thumbnail-image.locked');
+	});
+});
+function set_macro_image(link_jq_ref) {
+	var dataContent = link_jq_ref.attr('data-content');
+	jQuery('.macro-image').html('<img src="'+dataContent+'"/>');
+}
+</script>
 
-<ul class = "images_listing">
-$for row in images
-	<li><a href='/image/$(row.images_id)'><img src="/$(_config['image_thumbnails'])$(row.original_name)"></a></li>
-</ul>
+<div class="row">
+	<div class="span3">
+		<br>
+		<div class="macro" >
+			<div class="macro-image">
+				<img src="/static/archive/6e00d640a8411dfdd55e720832c7ab15.jpg">
+			</div>
+			<button class="btn btn-large btn-danger">
+				Zoom
+			</button>
+			<div class="macro-tag-listing">
+				tag1,tag2
+			</div>
+			<div class="macro-annotation">
+				Image annotation data.
+			</div>
+		</div>		
+	</div><!--/ -->
+	<div class="span9">
+		<div class="row">
+			<form method="POST" enctype="multipart/form-data" action="/list">
+				<input type="text" name="searchstr" />
+				<input type="submit" />
+			</form>
+		</div><!--/row-->
+		
+		<div class="row">
+		
+		
+
+			<ul class = "thumbnails">
+				$for row in images
+					$ image_file = "/"+_config['image_archive'] + row.original_name
+					$ thumbnail_file = "/"+_config['image_thumbnails'] + row.original_name
+					<li class="span2">
+						<div class="thumbnail">
+							<a href='/image/$(row.images_id)' class="thumbnail-image-link" data-content="$(image_file)">
+								<!-- <img src="/$(_config['image_thumbnails'])$(row.original_name)">  -->
+								<img src="$(thumbnail_file)" class="thumbnail-image">
+							</a>
+							<div class="caption">
+								<p>
+									<div class="btn-group">
+										<button class="btn btn-info">Detail</button>
+										<a class="btn btn-warning" href='/image/$(row.images_id)'>Open</a>
+									</div>
+								</p>
+							</div>
+						</div><!--/thumbnail -->
+					</li>
+			</ul>
+		</div>
+	</div>
+</div>

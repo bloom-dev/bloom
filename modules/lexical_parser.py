@@ -251,6 +251,23 @@ def set_logic(operation,left,right):
 def tokenize(in_string):
     lexer = shlex.shlex(in_string) #intelligently splits on spaces or parenthesis/brackets
     return list(lexer)      #lexer ~ iterator/generator. Must list() to instantiate it.
+def tokenize(in_string):
+    '''Tokenizes `in_string`, intelligenctly splitting on spaces and parenthesis/brackets.
+    However, since it uses code from shlex, it does not handle unicode. Therefore,
+    unicode strings are converted to ascii (removing any non-ascii characters), tokenized,
+    then converted back to unicode.'''
+    in_type = type(in_string)   
+    if in_type is unicode:
+        in_string = in_string.encode('ascii','ignore')
+        lexer = shlex.shlex(in_string) #intelligently splits on spaces or parenthesis/brackets
+        tokens = [unicode(elm) for elm in lexer]
+    elif in_type is str:
+        lexer = shlex.shlex(in_string) #intelligently splits on spaces or parenthesis/brackets
+        tokens = list(lexer)    #lexer ~ iterator/generator. Must instantiate it (~in this case by converting to list)
+    else:
+        raise TypeError("tokenize() received input of type '{0}', instead of type unicode or type str (aka ascii).".format(in_type))
+    return tokens    
+
 
 def print_slice(slice):
     print " ".join([str(elm) for elm in slice])
@@ -274,6 +291,7 @@ _testing['tags'] = {'boobs':set([1,2,3,4,5]),
         'mountains':set([1,4,12,13,14])
         }
 _testing['valid'] = [
+    'boobs',
     'boobs or (parasite and icecream)',
     '(boobs or parasite) and icecream',
     '(boobs and tits) not (wangs not (tits or mountains))',
@@ -281,25 +299,35 @@ _testing['valid'] = [
     '(boobs | parasite} & icecream',
     ]
 _testing['invalid'] = [
-    '(boobs and tits) not (wangs and (peoples or mountains)',
-    'boobs and not tits'
+    '(boobs and tits) not (wangs and (peoples or mountains)',       #mismatched parenthesis ==> should be `or mountains))`.
+    'boobs and not tits',           #sequential operators ==> `and not`
+    'boobs && tits',                 #invalid operator ==> `&&`
+    'wangs |'                       #missing tag ==> `wangs | MISSING`
+    ]
+_testing['edge'] = [
+    'notarealtag',                                          #tag not in DB - should evaluate to empty
+    'boobs | invalid'                                       #should evaluate to same as `boobs`
     ]
 
 
-
 if __name__ == "__main__":
-    #Test valid strings
-    for searchstr in _testing['valid'][2:]:
-        token_names = tokenize(searchstr)
-        tokens = [Token(name) for name in token_names]
-        set_tag_ids(tokens,_testing['tags'])
-        root_expr = Expression(tokens)      #Replace '(' ')' with expressions objects (depth-first)
-        ids = root_expr.contents
-        print(str(root_expr)+" = "+str(ids))
+    #========    Test valid strings
+    for searchstr in _testing['valid']:
+        try:
+            searchstr = unicode(searchstr)          #Convert to unicode for testing.
+            token_names = tokenize(searchstr)
+            tokens = [Token(name) for name in token_names]
+            set_tag_ids(tokens,_testing['tags'])
+            root_expr = Expression(tokens)      #Replace '(' ')' with expressions objects (depth-first)
+            ids = root_expr.contents
+            print("SUCCESS: "+str(root_expr)+" = "+str(ids))
+        except Exception as exc:
+            print("FAILURE: "+str(root_expr)+" encountered Exception = "+str(exc))
     
-    #Test invalid strings
+    #========    Test invalid strings
     for searchstr in _testing['invalid']:
         try:
+            searchstr = unicode(searchstr)          #Convert to unicode for testing.
             token_names = tokenize(searchstr)
             tokens = [Token(name) for name in token_names]
             set_tag_ids(tokens,_testing['tags'])
@@ -307,6 +335,6 @@ if __name__ == "__main__":
             ids = root_expr.contents
             raise AssertionError
         except AssertionError as exc:
-            raise AssertionError(searchstr+" did NOT error - this is a problem")
+            raise AssertionError("FAILURE: "+searchstr+" did NOT error - this is a problem")
         except Exception as exc:
-            print("Error: for '"+searchstr+"' -- which is what should happen")
+            print("SUCCESS: Exception: for '"+searchstr+"' -- which is what should happen.")

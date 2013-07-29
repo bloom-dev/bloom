@@ -56,18 +56,35 @@ _urls = (
 #
 # The classes are referred to by the _urls tuple. When a page is called with the path in the tuple,
 # one of these classes is also called.
+
+#  Input Format Issue: ASCII vs. Unicode
+#-----
+#The different handling of these has lead to multiple issues
+#for Bloom so far. 
+#  In Python 3, all strings are Unicode. In 2.7 (which we are using)
+#strings default to ASCII.
+#Unicode --> ASCII
+#		nonutf = in_string.encode('ascii','ignore')
+#ASCII --> Unicode
+#		utf = unicode(in_string)
+
 class search:
 	def GET(self,tags_string=''):
+		#--- Convert UNICODE to ASCII
+		if isinstance(tags_string, unicode):
+			tags_string = tags_string.encode('ascii','ignore')	#ignores non-ascii characters
 		if tags_string == '' or tags_string == None or tags_string == '/':
 			result = _db.select('images')
 			html = _render.images(result)
-			return str(html)	#str() can probably be removed
+			#return str(html)	#str() can probably be removed
+			return html
 		else:
 			try:
 				#web.header('Content-Type','text/html;charset=utf-8')
 				result = tag_search.search_tags(tags_string)
 				html = _render.images(result)
-				return str(html)	#str() can probably be removed
+				#return str(html)	#str() can probably be removed
+				return html
 			except Exception as exc:
 				#Search error page needs to go here.
 				error_message = "Error during tag search process."+str(exc)
@@ -82,6 +99,7 @@ class search:
 	def POST(self,tags=''):
 		x = web.input(searchstr='')
 		web.seeother('/list/'+x.searchstr.replace(' ','_'))
+
 
 
 class slideshow:

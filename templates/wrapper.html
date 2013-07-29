@@ -108,9 +108,14 @@ $def with (content)
 	<script>
 		jQuery(document).ready(function(){
 			mark_navbar_active();
+			jQuery('#navbar-search-submit').click(function(event){
+				event.preventDefault();
+				var searchstr = jQuery(this).parent().find('input[type=text]').val();
+				
+			});
 		});
 		function redirect_tag_search() {
-			//%20
+			
 		}
 		function mark_navbar_active() {
 			//================================ 
@@ -145,10 +150,10 @@ $def with (content)
 					<li><a href="/slideshow/">Slideshow</a></li>
 					<li><a href="/upload">Upload</a></li>
 				</ul>
-				<form class="navbar-search pull-left">
-					<input type="text" class="search-query span2" value="I don't work yet">
-					<button type="submit" class="btn btn-info">Search Tags</button>
-				</form>
+				<form class="navbar-search pull-left" method="POST" enctype="multipart/form-data" action="/list">
+					<input type="text" class="search-query span2" name="searchstr" value="">
+					<button id="navbar-tag-search-submit" type="submit" class="btn btn-info">Search Tags</button>
+				</form>	
 			</div>
 		</div><!--/topbar-->
 		
