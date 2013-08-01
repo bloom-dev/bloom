@@ -1,4 +1,4 @@
-$def with (images)
+$def with (searchstr,images)
 
 <style>
 .images_listing li{
@@ -28,6 +28,8 @@ jQuery(document).ready(function(){
 
 	//[] Apply 'Lock' on click
 	//... this overrides thumbnail-hover
+	jQuery("input[name='searchstr']").val('${searchstr}');
+
 	jQuery(".thumbnail-image-link").click(function(event){
 		event.preventDefault();
 		var self = {jq_ref:jQuery(this),
@@ -73,10 +75,6 @@ function set_macro_image(link_jq_ref) {
 	<div class="span9">
 		<div class="row">
 		<!-- Original:	-->
-			<form method="POST" enctype="multipart/form-data" action="/list">
-				<input type="text" name="searchstr" />
-				<input type="submit"/>
-			</form>
 		 
 		 <!-- New: Trying to fix encoding, so spaces ==> %20
 		 	<form method="POST" action="/list">

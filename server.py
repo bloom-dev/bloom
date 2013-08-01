@@ -85,7 +85,7 @@ class search:
 			tags_string = tags_string.encode('ascii','ignore')	#ignores non-ascii characters
 		if tags_string == '' or tags_string == None or tags_string == '/':
 			result = _db.select('images')
-			html = _render.images(result)
+			html = _render.images('',result)
 			#return str(html)	#str() can probably be removed
 			return html
 		else:
@@ -93,7 +93,7 @@ class search:
 				#web.header('Content-Type','text/html;charset=utf-8')
 				tags_string = tags_string.replace('_',' ')
 				result = tag_search.search_tags(tags_string)
-				html = _render.images(result)
+				html = _render.images(tags_string, result)
 				#return str(html)	#str() can probably be removed
 				return html
 			except Exception as exc:

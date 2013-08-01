@@ -113,12 +113,13 @@ $def with (content)
 			//Mark active element of navbar.
 			mark_navbar_active();
 			
-			//Trigger search in navbar.
-			jQuery('#navbar-tag-search-submit').click(function(event){
-				event.preventDefault();
-				var jq_search_textbox = jQuery(this).parent().find('input[type=text]');
-				redirect_tag_search(jq_search_textbox);
-			});
+			// This was not working so I commented it out --Paarth
+			// //Trigger search in navbar.
+			// jQuery('#navbar-tag-search-submit').click(function(event){
+			// 	event.preventDefault();
+			// 	var jq_search_textbox = jQuery(this).parent().find('input[type=text]');
+			// 	redirect_tag_search(jq_search_textbox);
+			// });
 		});
 		//============================== 
 		//Run search using navbar
@@ -168,7 +169,7 @@ $def with (content)
 				<!-- Original Search Form: Written in HTML -->
 				<form class="navbar-search pull-left" method="POST" enctype="multipart/form-data" action="/list">
 					<input type="text" class="search-query span2" name="searchstr" value="">
-					<button id="navbar-tag-search-submit" type="submit" class="btn btn-info">Search Tags</button>
+					<input id="navbar-tag-search-submit" type="submit" class="btn btn-info"/ value="Search Images">
 				</form>	
 				 
 				<!-- New Search Form: Written in Web.py's Python 
