@@ -91,6 +91,7 @@ class search:
 		else:
 			try:
 				#web.header('Content-Type','text/html;charset=utf-8')
+				tags_string = tags_string.replace('_',' ')
 				result = tag_search.search_tags(tags_string)
 				html = _render.images(result)
 				#return str(html)	#str() can probably be removed
