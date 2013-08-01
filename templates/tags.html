@@ -1,16 +1,14 @@
 $def with (tags)
-<style>
-td{
-	border: 1px solid black;
-	padding:5px;
-	padding-left:20px;
-}
-</style>
+
 <b>Tags:</b>
-<table border=1>
+<table class="table">
+	<thead>
 	<tr>
 		<th>Tag Name</th><th>Images with this tag</th>
 	</tr>
+	</thead>
+	<tbody>
 	$for tag in tags:
 		<tr><td><a href='/list/$tag.name'>$tag.name</a></td> <td>$tag.count</td></tr>
+	</tbody>
 </table>
